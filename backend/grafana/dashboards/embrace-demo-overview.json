@@ -1,0 +1,83 @@
+{
+  "uid": "embrace-demo-overview",
+  "title": "Embrace + Grafana Demo — Overview (FNB-96526)",
+  "tags": ["embrace", "fnb-96526", "demo"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values(traces_spanmetrics_calls_total, service)", "refId": "A" },
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Span volume by action / span name (spanmetrics)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" } } } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (span_name) (increase(traces_spanmetrics_calls_total{service=~\"$service\"}[$__rate_interval]))",
+          "legendFormat": "{{span_name}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "piechart",
+      "title": "ERROR spans by name (crash / failed sync)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (span_name) (traces_spanmetrics_calls_total{service=~\"$service\", status_code=\"STATUS_CODE_ERROR\"})",
+          "legendFormat": "{{span_name}}", "instant": true }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Recent traces (Tempo) — delay / workflow / crash / anr",
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "gridPos": { "h": 11, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "tempo", "uid": "tempo" },
+          "queryType": "traceqlSearch",
+          "query": "{ resource.service.name =~ \"embrace-demo-.+|io.pula.+|io.embrace.+\" }",
+          "limit": 50, "tableType": "traces" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "logs",
+      "title": "Logs & exceptions (Loki) — crash / caught-error / breadcrumbs / custom events",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 11, "w": 12, "x": 12, "y": 8 },
+      "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{service_name=~\"embrace-demo-.+|io.pula.+|io.embrace.+\"}" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "text",
+      "title": "About",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 19 },
+      "options": { "mode": "markdown", "content": "FNB-96526 spike. Telemetry from Embrace SDK (no-account) **and** plain OpenTelemetry, both exporting OTLP to this self-hosted Grafana stack. `telemetry.tool` = `embrace` | `otel`. Embrace's crash/ANR **symbolication & grouping are server-side (not self-hostable)** → stacks here are raw. See `docs/SPIKE_RESULTS.md`." }
+    }
+  ]
+}

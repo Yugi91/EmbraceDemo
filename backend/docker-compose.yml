@@ -1,0 +1,28 @@
+# Self-hosted observability backend for the Embrace + Grafana demo.
+#
+# Uses grafana/otel-lgtm: an all-in-one image bundling an OpenTelemetry Collector
+# (+ spanmetrics connector) -> Tempo (traces) / Loki (logs) / Prometheus (metrics)
+# -> Grafana (UI). This is the documented PoC path for "any OTLP backend" since
+# Embrace has NO self-hostable backend of its own (SDK exports OTLP only).
+#
+# Grafana states otel-lgtm is for DEV/DEMO only, not production. The prod-shaped
+# alternative (separate collector+tempo+loki+mimir+grafana) is noted in docs/ARCHITECTURE.md.
+services:
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: embrace-grafana-demo-lgtm
+    ports:
+      - "3939:3000"   # Grafana UI  -> http://localhost:3939   (host 3939 avoids conflicts)
+      - "4317:4317"   # OTLP/gRPC   (clients export here)
+      - "4318:4318"   # OTLP/HTTP   (clients export here)
+    environment:
+      # Anonymous admin so dashboard screenshots need no login.
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - lgtm-data:/data
+    restart: unless-stopped
+
+volumes:
+  lgtm-data:

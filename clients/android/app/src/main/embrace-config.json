@@ -1,0 +1,18 @@
+{
+  "ndk_enabled": true,
+  "sdk_config": {
+    "networking": {
+      "disabled_url_patterns": [
+        "10.0.2.2",
+        "localhost",
+        "127.0.0.1"
+      ]
+    },
+    "crash_handler": {
+      "enabled": true
+    },
+    "automatic_data_capture": {
+      "anr_info": true
+    }
+  }
+}

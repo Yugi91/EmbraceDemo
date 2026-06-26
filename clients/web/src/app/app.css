@@ -1,0 +1,99 @@
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.sub {
+  margin: 4px 0;
+  color: #aab;
+}
+.hint {
+  font-size: 0.85rem;
+  color: #889;
+}
+code {
+  background: #1c2030;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.tool {
+  color: #6cf;
+}
+.tool.otel {
+  color: #fc6;
+}
+.ok {
+  color: #5d5;
+}
+.bad {
+  color: #f66;
+}
+.err {
+  color: #f88;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #2a3147;
+  border-radius: 8px;
+  background: #161b2a;
+  color: #e6e6e6;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-align: left;
+}
+button:hover:not(:disabled) {
+  border-color: #4a587a;
+  background: #1c2335;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.danger {
+  border-color: #5a2a2a;
+}
+button small {
+  color: #889;
+  font-size: 0.75rem;
+}
+.console {
+  margin-top: 24px;
+}
+.console h2 {
+  font-size: 1rem;
+}
+#log {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  background: #0b0d14;
+  border: 1px solid #20263a;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+#log li {
+  padding: 2px 0;
+  border-bottom: 1px solid #161b2a;
+}
+.ts {
+  color: #667;
+  margin-right: 8px;
+}

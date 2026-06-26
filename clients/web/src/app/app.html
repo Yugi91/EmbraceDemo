@@ -1,0 +1,49 @@
+<main class="wrap">
+  <header>
+    <h1>Embrace Grafana Demo — Web (Angular 20)</h1>
+    <p class="sub">
+      Telemetry arm:
+      <strong class="tool" [class.otel]="tool() === 'otel'">{{ tool() }}</strong>
+      &nbsp;·&nbsp; SDK ready:
+      <strong [class.ok]="ready()" [class.bad]="!ready()">{{ ready() ? 'yes' : 'no' }}</strong>
+      &nbsp;·&nbsp; service.name = <code>embrace-demo-web</code>
+    </p>
+    @if (initError()) {
+      <p class="err">init error: {{ initError() }}</p>
+    }
+    <p class="hint">
+      Add <code>?exporter=otel</code> to the URL to swap the Embrace SDK for plain OpenTelemetry
+      (F1 comparison). Default arm is Embrace.
+    </p>
+  </header>
+
+  <section class="actions">
+    <button id="btn-delay" data-testid="delay" [disabled]="busy()" (click)="runDelay()">
+      delay <small>traced async perf span</small>
+    </button>
+    <button id="btn-crash" data-testid="crash" class="danger" (click)="runCrash()">
+      crash <small>unhandled JS error (B1)</small>
+    </button>
+    <button id="btn-caught" data-testid="caught-error" [disabled]="busy()" (click)="runCaughtError()">
+      caught-error <small>handled exception (E7)</small>
+    </button>
+    <button id="btn-workflow" data-testid="workflow" [disabled]="busy()" (click)="runWorkflow()">
+      workflow <small>capture → save → sync</small>
+    </button>
+    <button id="btn-workflow-fail" data-testid="workflow-fail" [disabled]="busy()" (click)="runWorkflow(true)">
+      workflow (force sync fail) <small>span status ERROR</small>
+    </button>
+    <button id="btn-custom" data-testid="custom-event" (click)="runCustomEvent()">
+      custom event <small>B4</small>
+    </button>
+  </section>
+
+  <section class="console">
+    <h2>Activity log</h2>
+    <ul id="log">
+      @for (line of logLines(); track $index) {
+        <li><span class="ts">{{ line.ts }}</span> {{ line.text }}</li>
+      }
+    </ul>
+  </section>
+</main>

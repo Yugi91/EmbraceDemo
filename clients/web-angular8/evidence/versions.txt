@@ -1,0 +1,36 @@
+SPIKE FNB-96526 — E8 (Angular 8) Embrace Web SDK feasibility
+Toolchain (node:14 Docker container):
+  node    : v14.21.3
+  npm     : 6.14.18
+  @angular/cli            : 8.3.29 (global)
+  @angular/* (app)        : 8.2.14
+  @angular-devkit/build-angular : 0.803.29
+  typescript (app)        : 3.5.3  (Angular 8 caps it: @angular/compiler-cli@8.2.14 peer "typescript: >=3.4 <3.6")
+  tsconfig target         : es2015 (differential loading -> also emits ES5)
+
+Embrace SDK tried:
+  @embrace-io/web-sdk@2.22.0   (latest; same version that WORKS on Angular 20 reference at clients/web)
+    - no "engines" field of its own
+    - peerDependencies: { react: "^16.8.0 || ^17 || ^18 || ^19" }  (react is peer-only, unused on the manual-wiring path)
+    - transitive deps: @opentelemetry/* @ 2.8.0 / ^0.219.0, web-vitals@^5.3.0
+  @opentelemetry/exporter-trace-otlp-http@0.219.0  (imported directly by the init in main.ts)
+
+Engine constraint of the modern OTel transitive deps (emitted as `npm WARN notsup`, non-fatal on npm 6):
+  @opentelemetry/core@2.8.0, sdk-trace-web@2.8.0, sdk-trace-base@2.8.0, sdk-metrics@2.8.0,
+  resources@2.8.0, instrumentation@0.219.0, otlp-transformer@0.219.0, otlp-exporter-base@0.219.0,
+  sdk-logs@0.219.0, exporter-trace-otlp-http@0.219.0, instrumentation-fetch/-xhr@0.219.0, web-common@0.219.0
+      => engines.node = "^18.19.0 || >=20.6.0"   (Node 14 fails)
+  import-in-the-middle@3.2.0 => engines.node = ">=18"
+
+RESULT:
+  npm install  : SUCCEEDS (engine mismatches are WARN-only under npm 6; `+ @embrace-io/web-sdk@2.22.0`, exit 0)
+  ng build     : FAILS, exit 1, 49 TypeScript errors, NO dist bundle emitted
+                 42x TS1005 ("';' expected" / "'=' expected"), 6x TS1128 ("Declaration or statement expected"), 1x TS1109
+                 ALL in @opentelemetry/{exporter-trace-otlp-http,otlp-exporter-base}/build/src/*.d.ts
+                 on `import type {...}` / `export type {...}` lines.
+  Root cause   : `import type`/`export type` is TypeScript 3.8 syntax (Feb 2020). Angular 8 pins TS <3.6,
+                 whose parser cannot tokenize it -> SYNTAX (parse) errors, thrown before any type-checking.
+  Workaround   : skipLibCheck:true -> SAME 49 errors (it suppresses *semantic* lib checks, not *parse* errors).
+                 Upgrading TS to >=3.8 is blocked by @angular/compiler-cli@8.2.14 peer "typescript: >=3.4 <3.6".
+
+Baseline (no Embrace): ng build --prod SUCCEEDS, exit 0, emits ES2015+ES5 bundles (main-es2015 ~134kB, main-es5 ~164kB).

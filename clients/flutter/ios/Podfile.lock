@@ -1,0 +1,124 @@
+PODS:
+  - embrace_ios (0.0.1):
+    - EmbraceIO (= 6.20.0)
+    - Flutter
+    - OpenTelemetry-Swift-Api
+  - EmbraceIO (6.20.0):
+    - EmbraceIO/EmbraceIO (= 6.20.0)
+  - EmbraceIO/EmbraceAtomicsShim (6.20.0)
+  - EmbraceIO/EmbraceCaptureService (6.20.0):
+    - EmbraceIO/EmbraceConfiguration
+    - EmbraceIO/EmbraceOTelInternal
+    - EmbraceIO/OpenTelemetrySdk
+  - EmbraceIO/EmbraceCommonInternal (6.20.0):
+    - EmbraceIO/EmbraceAtomicsShim
+    - EmbraceIO/OpenTelemetrySdk
+  - EmbraceIO/EmbraceConfigInternal (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceConfiguration
+  - EmbraceIO/EmbraceConfiguration (6.20.0)
+  - EmbraceIO/EmbraceCore (6.20.0):
+    - EmbraceIO/EmbraceCaptureService
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceConfigInternal
+    - EmbraceIO/EmbraceConfiguration
+    - EmbraceIO/EmbraceObjCUtilsInternal
+    - EmbraceIO/EmbraceOTelInternal
+    - EmbraceIO/EmbraceSemantics
+    - EmbraceIO/EmbraceStorageInternal
+    - EmbraceIO/EmbraceUploadInternal
+  - EmbraceIO/EmbraceCoreDataInternal (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceObjCUtilsInternal
+  - EmbraceIO/EmbraceCrash (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceKSCrash
+    - EmbraceIO/EmbraceSemantics
+  - EmbraceIO/EmbraceIO (6.20.0):
+    - EmbraceIO/EmbraceCaptureService
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceCore
+    - EmbraceIO/EmbraceCrash
+    - EmbraceIO/EmbraceKSCrashBacktraceSupport
+    - EmbraceIO/EmbraceSemantics
+  - EmbraceIO/EmbraceKSCrash (6.20.0):
+    - KSCrash (~> 2.5.1)
+  - EmbraceIO/EmbraceKSCrashBacktraceSupport (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceKSCrash
+  - EmbraceIO/EmbraceObjCUtilsInternal (6.20.0)
+  - EmbraceIO/EmbraceOTelInternal (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceCoreDataInternal
+    - EmbraceIO/EmbraceSemantics
+    - EmbraceIO/EmbraceStorageInternal
+    - EmbraceIO/OpenTelemetrySdk
+  - EmbraceIO/EmbraceSemantics (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/OpenTelemetrySdk
+  - EmbraceIO/EmbraceStorageInternal (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceCoreDataInternal
+    - EmbraceIO/EmbraceSemantics
+  - EmbraceIO/EmbraceUploadInternal (6.20.0):
+    - EmbraceIO/EmbraceCommonInternal
+    - EmbraceIO/EmbraceCoreDataInternal
+    - EmbraceIO/EmbraceOTelInternal
+  - EmbraceIO/OpenTelemetrySdk (6.20.0):
+    - OpenTelemetry-Swift-Sdk (~> 2.1)
+  - Flutter (1.0.0)
+  - KSCrash (2.5.1):
+    - KSCrash/Installations (= 2.5.1)
+  - KSCrash/Core (2.5.1)
+  - KSCrash/DemangleFilter (2.5.1):
+    - KSCrash/Recording
+  - KSCrash/Filters (2.5.1):
+    - KSCrash/Recording
+    - KSCrash/RecordingCore
+    - KSCrash/ReportingCore
+  - KSCrash/Installations (2.5.1):
+    - KSCrash/DemangleFilter
+    - KSCrash/Filters
+    - KSCrash/Recording
+    - KSCrash/Sinks
+  - KSCrash/Recording (2.5.1):
+    - KSCrash/RecordingCore
+  - KSCrash/RecordingCore (2.5.1):
+    - KSCrash/Core
+  - KSCrash/ReportingCore (2.5.1):
+    - KSCrash/Core
+  - KSCrash/Sinks (2.5.1):
+    - KSCrash/Filters
+    - KSCrash/Recording
+  - OpenTelemetry-Swift-Api (2.5.0)
+  - OpenTelemetry-Swift-Sdk (2.5.0):
+    - OpenTelemetry-Swift-Api (= 2.5.0)
+
+DEPENDENCIES:
+  - embrace_ios (from `.symlinks/plugins/embrace_ios/ios`)
+  - Flutter (from `Flutter`)
+
+SPEC REPOS:
+  trunk:
+    - EmbraceIO
+    - KSCrash
+    - OpenTelemetry-Swift-Api
+    - OpenTelemetry-Swift-Sdk
+
+EXTERNAL SOURCES:
+  embrace_ios:
+    :path: ".symlinks/plugins/embrace_ios/ios"
+  Flutter:
+    :path: Flutter
+
+SPEC CHECKSUMS:
+  embrace_ios: 0b6dbe511201ab11e46d540eea3fbf48f2ff250e
+  EmbraceIO: c4a0b56353435287dc5d2608c5e3389bf8338076
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  KSCrash: 8c4464fd5da7de520f2ce4a00fdf63f169a80f18
+  OpenTelemetry-Swift-Api: a77f3ae175b7e4d3b8899a02a47cebef955e1ddd
+  OpenTelemetry-Swift-Sdk: e92929a1e4280334d631b07fa9f785b8107c919c
+
+PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+
+COCOAPODS: 1.16.2
