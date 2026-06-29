@@ -85,17 +85,14 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
 
-    // ---- Embrace Android SDK + its OTel-Kotlin exporter — ONLY for the `embrace` arm ----
-    // Embrace 9.0 + io.opentelemetry.kotlin:0.4.0 transitively drag kotlin-stdlib 2.3.0 + an
-    // okhttp built with Kotlin 2.2 onto the classpath, which this project's Kotlin 2.0.21 compiler
-    // rejects ("incompatible metadata" → internal compiler error). The OTel arm reaches Embrace only
-    // via reflection (see EmbraceArm.kt) so it needs NO compile-time Embrace dependency — gating
-    // these to the embrace arm keeps the OTel arm on a clean Kotlin 2.0 classpath.
-    if (telemetryTool == "embrace") {
-        implementation("io.embrace:embrace-android-sdk:9.0.0")
-        implementation("io.opentelemetry.kotlin:exporters-otlp:0.4.0")
-        implementation("io.opentelemetry.kotlin:sdk-api:0.4.0")
-    }
+    // ---- Embrace Android SDK + its OTel-Kotlin exporter ----
+    // On BOTH arms now: the project compiles with Kotlin 2.3.0, so the kotlin-stdlib 2.3.0 these
+    // drag in no longer conflicts. This lets the demo route custom spans through Embrace's TracingApi
+    // (Embrace.getInstance().recordCompletedSpan) in the embrace arm so they reach the Embrace cloud
+    // dashboard (not just Grafana). The embrace gradle PLUGIN is still applied only for the embrace arm.
+    implementation("io.embrace:embrace-android-sdk:9.0.0")
+    implementation("io.opentelemetry.kotlin:exporters-otlp:0.4.0")
+    implementation("io.opentelemetry.kotlin:sdk-api:0.4.0")
 
     // ---- OpenTelemetry-Java: the plain-OTel arm (telemetry.tool=otel), the F1 baseline ----
     // Standard OTel Java SDK + OTLP/HTTP exporter, no Embrace code in this arm.

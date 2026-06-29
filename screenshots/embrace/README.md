@@ -11,7 +11,7 @@ full-screen (1920×1080) by attaching to the logged-in browser. App IDs + tokens
 |---|---|---|---|
 | **Web** (Angular 20) | DemoWeb (`ctac2`) | demo screen + action buttons | `case-index-traces` (delay/crash/caught_error/workflow by name) · `case-workflow` (capture→save→sync waterfall) · `exceptions` (crash *DemoUnhandledError*) · `web-vitals` · `overview`/`sessions`/`issues`/`network` |
 | **iOS** (Swift) | DemoIOS (`gq23k`) | sim screen + buttons | `traces` (delay/anr/frames/workflow + `emb-app-startup-warm`, `emb-…time-to-first-render`) · `exceptions` · `overview`/`sessions`/`issues` |
-| **Android** (Kotlin) | DemoAndroid (`2tbxs`) | emulator screen + buttons | `issues` (**Crash** java.lang.RuntimeException *grouped* + **ANR 100%**) · `traces` (`emb-app-startup-cold`) · `overview`/`sessions`/`exceptions` |
+| **Android** (Kotlin) | DemoAndroid (`2tbxs`) | emulator screen + buttons | `traces` (delay/workflow/capture/save/sync/caught_error/frames by name + `emb-app-startup-cold`) · `issues` (**Crash** java.lang.RuntimeException *grouped* + **ANR 100%**) · `overview`/`sessions`/`exceptions` |
 | **Flutter** | DemoFlutter (`tzb7f`) | sim screen + buttons | `traces`/`sessions`/`issues`/`overview`/`exceptions` |
 
 ## What the per-case views show
@@ -25,9 +25,13 @@ full-screen (1920×1080) by attaching to the logged-in browser. App IDs + tokens
   iOS/Android/Flutter without manual code — the value Embrace adds over plain OTel (finding F1).
 
 ## Note on the two export targets
-- **iOS / Flutter / Web** route their custom demo spans THROUGH the Embrace SDK → so those spans appear on
-  the Embrace dashboard **and** Grafana.
-- **Android** emits the custom demo spans via plain OTel-Java (→ Grafana); the Embrace Android SDK on the
-  cloud side shows its **native auto-capture** (startup, **crash grouping**, **ANR**) — see `android/issues.png`.
+- **All four clients** route their custom demo spans THROUGH the Embrace SDK → so those spans appear on the
+  Embrace dashboard **and** Grafana. On Android this is done by also recording each action via the Embrace
+  TracingApi (`Embrace.getInstance().recordCompletedSpan(name, startMs, endMs)`) in the `embrace` arm, in
+  addition to the OTel-Java span that feeds Grafana — see `android/traces.png` (delay/workflow/capture/save/
+  sync/caught_error/frames all listed). On Android these are recorded as flat root spans (one row per case)
+  rather than the nested `workflow → capture → save → sync` waterfall the web/iOS Embrace SDKs build.
+- On **mobile**, Embrace additionally adds **crash grouping + ANR detection** server-side (Android `issues.png`
+  shows both) — its strength that the Grafana self-host path does NOT have (finding F2).
 
 Grafana-side screenshots of the same telemetry: `../20_grafana_overview.png`, `../21_grafana_all_platforms.png`.

@@ -3,6 +3,7 @@ package io.embrace.demo.android.telemetry
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import io.embrace.demo.android.BuildConfig
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.logs.Severity
@@ -16,19 +17,36 @@ class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
     private fun actionAttr(name: String) =
         Attributes.of(AttributeKey.stringKey("action.name"), name)
 
+    /**
+     * In the `embrace` arm, ALSO record the action as a completed Embrace span via the Embrace
+     * TracingApi so it reaches the Embrace **cloud** dashboard (Traces → Root Spans List), not only
+     * Grafana via OTel-Java. No-op in the `otel` arm (Embrace SDK not started → guarded + try/catch).
+     */
+    private fun embRecord(name: String, startMs: Long) {
+        if (BuildConfig.TELEMETRY_TOOL != "embrace") return
+        try {
+            io.embrace.android.embracesdk.Embrace.getInstance()
+                .recordCompletedSpan(name, startMs, System.currentTimeMillis())
+        } catch (_: Throwable) { /* SDK not started in this arm — ignore */ }
+    }
+
     fun delay() = bg.execute {
+        val t0 = System.currentTimeMillis()
         val s = Telemetry.newSpan("delay", Telemetry.sampleAttrs("delay"))
         s.addEvent("delay.started")
         Thread.sleep(760)
         s.addEvent("delay.completed")
         s.end()
+        embRecord("delay", t0)
         Telemetry.log("delay completed ok (760ms)", Severity.INFO, actionAttr("delay"))
     }
 
     fun workflow(forceFail: Boolean) = bg.execute {
+        val wfStart = System.currentTimeMillis()
         val parent = Telemetry.newSpan("workflow", Telemetry.sampleAttrs("workflow"))
         parent.addEvent("started")
         for ((step, ms) in listOf("capture" to 80L, "save" to 60L)) {
+            val stepStart = System.currentTimeMillis()
             val c = Telemetry.newSpan(
                 step,
                 Attributes.builder()
@@ -37,7 +55,9 @@ class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
                 parent
             )
             c.addEvent("$step.started"); Thread.sleep(ms); c.addEvent("$step.done"); c.end()
+            embRecord(step, stepStart)
         }
+        val syncStart = System.currentTimeMillis()
         val sync = Telemetry.newSpan(
             "sync",
             Attributes.of(AttributeKey.stringKey("step.name"), "sync"), parent
@@ -51,6 +71,7 @@ class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
             sync.setStatus(StatusCode.ERROR, "sync failed")
             sync.addEvent("sync.failed"); sync.end()
             parent.setStatus(StatusCode.ERROR, "workflow failed"); parent.end()
+            embRecord("sync", syncStart); embRecord("workflow", wfStart)
             Telemetry.log(
                 "workflow failed at sync (HTTP 503)", Severity.ERROR,
                 Attributes.builder().put("action.name", "workflow")
@@ -59,14 +80,17 @@ class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
         } else {
             sync.setAttribute("step.status", "ok"); sync.addEvent("sync.done"); sync.end()
             parent.end()
+            embRecord("sync", syncStart); embRecord("workflow", wfStart)
             Telemetry.log("workflow completed ok", Severity.INFO, actionAttr("workflow"))
         }
     }
 
     fun caughtError() = bg.execute {
+        val t0 = System.currentTimeMillis()
         try {
             throw IllegalStateException("EmbraceGrafanaDemo intentional handled error (action.name=caught_error)")
         } catch (e: Exception) {
+            embRecord("caught_error", t0)
             Telemetry.log(
                 "demo handled exception (action.name=caught_error): ${e.message}", Severity.ERROR,
                 Attributes.builder()
@@ -80,11 +104,13 @@ class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
 
     /** Jank the MAIN thread to exercise slow/frozen frames (E4). */
     fun frames() = main.post {
+        val t0 = System.currentTimeMillis()
         val s = Telemetry.newSpan("frames", Telemetry.sampleAttrs("frames"))
         s.addEvent("frames.jank_start")
         repeat(12) { Thread.sleep(120) }   // 12 x 120ms bursts on the UI thread
         s.addEvent("frames.jank_burst_done")
         s.end()
+        embRecord("frames", t0)
         Telemetry.log("frames jank burst done (12x120ms)", Severity.WARN, actionAttr("frames"))
     }
 
