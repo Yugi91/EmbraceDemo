@@ -19,7 +19,9 @@ import EmbraceIO
     //
     // Gated on a launch env var so the plain-OTel arm stays clean:
     //   xcrun simctl launch --setenv EMBRACE_ENABLED=1 ...
-    if ProcessInfo.processInfo.environment["EMBRACE_ENABLED"] == "1" {
+    let embEnv = ProcessInfo.processInfo.environment
+    let embAppId = embEnv["EMBRACE_APP_ID"]
+    if embEnv["EMBRACE_ENABLED"] == "1" || (embAppId?.isEmpty == false) {
       let export = OpenTelemetryExport(
         spanExporter: OtlpJsonSpanExporter(),
         logExporter: OtlpJsonLogExporter()
@@ -41,14 +43,27 @@ import EmbraceIO
         // OpenTelemetryExport is supplied. platform: .flutter so the Flutter
         // plugin attaches correctly. KSCrash gives crash + app-hang capture
         // for E2/E3.
-        let options = Embrace.Options(
-          export: export,
-          platform: .flutter,
-          captureServices: captureServices,
-          crashReporter: KSCrashReporter()
-        )
+        let options: Embrace.Options
+        if let appId = embAppId, !appId.isEmpty {
+          // DUAL-EXPORT: appId → Embrace cloud dashboard, export → our OTLP/Grafana.
+          NSLog("EMBRACE-DEMO: dual-export ON, appId=\(appId)")
+          options = Embrace.Options(
+            appId: appId,
+            platform: .flutter,
+            captureServices: captureServices,
+            crashReporter: KSCrashReporter(),
+            export: export
+          )
+        } else {
+          options = Embrace.Options(
+            export: export,
+            platform: .flutter,
+            captureServices: captureServices,
+            crashReporter: KSCrashReporter()
+          )
+        }
         try Embrace.setup(options: options).start()
-        NSLog("EMBRACE-DEMO: native setup OK (no-account, custom OTLP export)")
+        NSLog("EMBRACE-DEMO: native setup OK")
       } catch {
         NSLog("EMBRACE-DEMO: native setup FAILED: \(error)")
       }

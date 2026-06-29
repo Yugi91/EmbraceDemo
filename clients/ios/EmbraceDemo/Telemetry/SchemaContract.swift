@@ -36,6 +36,15 @@ enum TelemetryConfig {
   static var isEmbrace: Bool { tool == "embrace" }
   static var isOtel: Bool { tool == "otel" }
 
+  /// Optional Embrace-cloud App ID → dual-export (Embrace cloud + custom OTLP/Grafana). Injected at
+  /// runtime via env so no account-specific ID is committed:
+  ///   xcrun simctl launch --setenv EMBRACE_APP_ID=<id>   (or SIMCTL_CHILD_EMBRACE_APP_ID=<id>)
+  /// nil/empty → no-account (export-only).
+  static var embraceAppId: String? {
+    let v = ProcessInfo.processInfo.environment["EMBRACE_APP_ID"]
+    return (v?.isEmpty == false) ? v : nil
+  }
+
   /// Comma-separated actions to fire automatically after launch (no UI taps —
   /// `simctl` has no coordinate-tap here). e.g.
   ///   --setenv AUTOFIRE=delay,workflow,workflow,caught,frames

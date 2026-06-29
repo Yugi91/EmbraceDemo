@@ -82,8 +82,17 @@ export class EmbraceProvider implements TelemetryProvider {
 
   init(): void {
     try {
+      // Optional Embrace-cloud DUAL-EXPORT: providing an appID makes the SDK send to the Embrace
+      // dashboard IN ADDITION to the custom OTLP exporters (→ Grafana). Read at runtime from the
+      // `embraceAppId` query param (or window.__EMBRACE_APP_ID__) so no account-specific ID is
+      // committed to the repo. Omitted → no-account mode (Grafana-only).
+      const appId =
+        new URLSearchParams(globalThis.location?.search ?? '').get('embraceAppId') ||
+        (globalThis as unknown as { __EMBRACE_APP_ID__?: string }).__EMBRACE_APP_ID__ ||
+        undefined;
       const result = initSDK({
-        // appID intentionally omitted → no-account mode; valid because custom exporters are set.
+        ...(appId ? { appID: appId } : {}),
+        // appID omitted → no-account mode; valid because custom OTLP exporters are set.
         appVersion: APP_VERSION,
         resource: resourceFromAttributes(commonResourceAttributes('embrace')),
         spanExporters: [new OTLPTraceExporter({ url: OTLP_TRACES_URL })],

@@ -108,15 +108,28 @@ final class EmbraceTelemetryService: TelemetryService {
               ignoredURLs: ["localhost:4318", "127.0.0.1:4318"])))
         .build()
 
-      // appId-less designated initializer — valid only with a custom export.
-      // platform: .default for a native iOS app. KSCrash gives crash + app-hang
-      // capture (E2/E3).
-      let options = Embrace.Options(
-        export: export,
-        platform: .default,
-        captureServices: captureServices,
-        crashReporter: KSCrashReporter()
-      )
+      // platform: .default for a native iOS app. KSCrash gives crash + app-hang capture (E2/E3).
+      let options: Embrace.Options
+      if let appId = TelemetryConfig.embraceAppId {
+        // DUAL-EXPORT: appId → Embrace cloud dashboard, AND `export` → our OTLP/Grafana.
+        // endpoints defaults to .init(appId:) (US region a-<appId>.data.emb-api.com).
+        NSLog("EMBRACE-DEMO: dual-export ON, appId=\(appId)")
+        options = Embrace.Options(
+          appId: appId,
+          platform: .default,
+          captureServices: captureServices,
+          crashReporter: KSCrashReporter(),
+          export: export
+        )
+      } else {
+        // appId-less designated initializer — valid only with a custom export (no-account).
+        options = Embrace.Options(
+          export: export,
+          platform: .default,
+          captureServices: captureServices,
+          crashReporter: KSCrashReporter()
+        )
+      }
       try Embrace.setup(options: options).start()
       Embrace.client?.metadata.userIdentifier = TelemetryConfig.demoUserId
       tracer = Embrace.client?.tracer(instrumentationName: "embrace-demo-ios")

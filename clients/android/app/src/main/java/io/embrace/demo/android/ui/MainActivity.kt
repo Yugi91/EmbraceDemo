@@ -28,7 +28,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         actions = DemoActions(applicationContext)
         setContent { DemoScreen(actions) }
-        if (BuildConfig.AUTOFIRE) runAutofire()
+        // Autofire if baked in (-Pautofire=true) OR requested at launch via intent extra
+        // (`am start --ez autofire true`) — the latter lets one build serve a clean UI launch
+        // and a separate data-push launch.
+        if (BuildConfig.AUTOFIRE || intent?.getBooleanExtra("autofire", false) == true) runAutofire()
     }
 
     private fun runAutofire() {
