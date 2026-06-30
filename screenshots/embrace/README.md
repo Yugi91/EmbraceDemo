@@ -34,4 +34,21 @@ full-screen (1920×1080) by attaching to the logged-in browser. App IDs + tokens
 - On **mobile**, Embrace additionally adds **crash grouping + ANR detection** server-side (Android `issues.png`
   shows both) — its strength that the Grafana self-host path does NOT have (finding F2).
 
+## Deep drill-in captures (Performance + Troubleshooting) — `<platform>/deep/`
+"All the way inside" — drilled into the detail views, not just the summary lists.
+
+| Platform | `deep/` contents |
+|---|---|
+| **Android** (`2tbxs`) | `crashes` (crash-free % + trend + grouped RuntimeException) · `crash-detail-stack` (full stack **DemoActions.kt:130**, "Most relevant" frame) · `crash-detail-timeline` (session: startup→foreground→activity→network) · `crash-detail-logs` · `anr` + `anr-detail` (`java.lang.Thread.sleep`, ANR-free 95.83%) · `app-startup` · `network` · `release-health` · `trace-workflow-waterfall` · `user-flows` |
+| **iOS** (`gq23k`) | `crashes` + `crash-detail-stack`/`-timeline`/`-logs` (Swift-mangled `$s…Actions…crash` — debug build, no dSYM upload = F2) · `app-startup` · `network` · `release-health` · `trace-workflow-waterfall` (**nested**, Total Spans 4) · `user-flows` |
+| **Flutter** (`tzb7f`) | `exceptions` (Dart crash is an **Exception**, not a native Crash) · `app-startup` (cold/warm/TTFR) · `network` · `release-health` · `trace-workflow-waterfall` (**nested**) · `user-flows` |
+| **Web** (`ctac2`) | `exceptions` (DemoHandledError + DemoUnhandledError JS errors) · `network` (**real business endpoint** `GET jsonplaceholder.typicode.com/todos/«number»`, auto-captured) · `web-vitals` · `release-health` · `trace-workflow-waterfall` · `exception-detail` |
+
+Platform-honest differences (captured, not hidden):
+- **Flutter crash → Exceptions, not Crashes** — a Dart guarded-zone error; the native Crashes view shows the empty state.
+- **iOS has no ANR view** — the iOS analogue is app-hang; ANR is Android-specific.
+- **Android records flat root spans** (each action a separate row) while **iOS / Flutter** nest `workflow → capture → save → sync` into a true waterfall.
+- **Real-endpoint network**: a `network` action (real HTTP GET to jsonplaceholder.typicode.com) is wired on all 4 clients; captured for **web** so far (`web/deep/network.png`). Android/iOS/Flutter native re-runs to refresh their Network view with the real endpoint are pending.
+- **Out Of Memory** + **Compare** (2-version) views are not yet populated (need an OOM trigger + a 2nd build — Level 3).
+
 Grafana-side screenshots of the same telemetry: `../20_grafana_overview.png`, `../21_grafana_all_platforms.png`.
