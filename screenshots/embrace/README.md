@@ -56,6 +56,14 @@ Platform-honest differences (captured, not hidden):
   - **Android** (plain `OkHttpClient`) → ❌ NOT auto-captured — needs the `EmbraceOkHttp3Interceptor` added to the client (or the gradle plugin's network swazzle). `android/deep/network.png` shows only emb-api SDK traffic.
   - **Flutter** (`package:http` → Dart `HttpClient`) → ❌ NOT auto-captured — Dart's HttpClient uses its own sockets, bypassing the native URLSession that Embrace hooks; needs Dart-side HTTP instrumentation. `flutter/deep/network.png` shows only emb-api traffic.
 - **User Terminated** (Android): `android/deep/user-terminated.png` — 3 user-terminated sessions (recents-swipe), UT-free 97.81%.
-- **Out Of Memory** + **Compare** (2-version) views are not yet populated (need an OOM trigger + a 2nd build — Level 3).
+- **Out Of Memory** view — FINDING (tested): our `oom` action allocates 4 MB chunks until the JVM throws
+  `java.lang.OutOfMemoryError`; the process is then SIGKILL'd (signal 9). This does NOT populate the dedicated
+  **Out Of Memory** view, which tracks *silent OS low-memory-killer (lmkd)* terminations — an in-app heap OOME
+  hits the JVM heap cap first and dies too fast to even write a clean crash report. Not reproducible on a
+  RAM-rich emulator. (The OOM button is wired on all clients; the view stays empty by design.)
+- **Compare** view — FINDING (tested): Embrace's "Compare" is a **Network Insights** comparison that requires
+  *first-party-domain* configuration + captured network calls; with none set up it shows "No data found". (A
+  2nd app version WAS shipped — `crashes.png` now shows the crash spanning versions `1.0.0+1 - 1.0.1+2`, so
+  multi-version tracking works; the Compare view itself just needs first-party-domain config.)
 
 Grafana-side screenshots of the same telemetry: `../20_grafana_overview.png`, `../21_grafana_all_platforms.png`.
