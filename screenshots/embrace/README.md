@@ -20,15 +20,18 @@ full-screen (1920×1080) by attaching to the logged-in browser. App IDs + tokens
 - **Trace detail** (e.g. `case-workflow`, `trace-metric-waterfall`) = the span waterfall. The `metric` case
   (replaces the old `delay`) builds a **concurrent + nested perf-span tree**: `metric → {A ∥ B}`, and inside
   A `→ C → D` sequentially, capturing each task's duration. On the dashboard the instance shows **Total Spans
-  5** with **Longest Span = A** (A = C+D ≈ 210ms > B 150ms), root ≈ 220ms — see `<ios|web|flutter>/deep/
-  trace-metric-waterfall.png`. **FINDING (honest, partially open):** the metric tree nests correctly on
-  **iOS / Web / Flutter** Embrace cloud (verified). On **Android the `metric` tree did NOT surface on the
-  Embrace cloud dashboard** — even though the app's *other* custom spans (`workflow`, `network`, …) DO appear,
-  and autofire demonstrably invokes `metric()` (the run ends in the intentional crash). **Root cause is
-  UNCONFIRMED:** a diagnostic re-run (instrumenting the Embrace `startSpan`/`stop` calls) was inconclusive —
-  the added logs did not surface, which was not explained in the time available. So this is flagged as an
-  **open item**, NOT attributed to a specific cause. (An earlier note speculated "raw worker `Thread`s"; that
-  was unverified and has been retracted.) `workflow` still shows `workflow → capture → save → sync`.
+  5** with **Longest Span = A** (A = C+D ≈ 210ms > B 150ms), root ≈ 220ms — see `<ios|web|flutter|android>/
+  deep/trace-metric-waterfall.png`. The metric tree nests on **ALL FOUR** clients' Embrace cloud — iOS / Web /
+  Flutter / **Android** — each instance showing **Total Spans 5** (`metric → {A → {C, D}, B}`).
+  **Resolved (root cause found):** an earlier observation that "Android metric doesn't surface on Embrace
+  cloud" was a **tooling artifact, not an SDK limitation** — `adb install -r` was silently NOT replacing the
+  running app during iteration, so a stale build (still on the old `delay` action) kept running. A clean
+  rebuild + `adb uninstall` + fresh install confirmed Embrace Android `startSpan(name, parent)` works (returns
+  a valid span) and the metric tree reaches the cloud identically to the other platforms. Earlier speculative
+  claims ("raw worker `Thread`s", "startSpan fails on Android") are **retracted**. Android uses Kotlin
+  **coroutines** (async A‖B, C→D sequential in A). Minor cosmetic: the Android summary may show the parent's
+  short emit-window duration; the leaf C/D/B durations are the real measured times. `workflow` still shows
+  `workflow → capture → save → sync`.
 - **Issues / Exceptions** = crash & handled errors by name; on **mobile**, Embrace adds **crash grouping +
   ANR detection** (Android `issues` shows both) — its server-side strength that the Grafana self-host path
   does NOT have (finding F2).
