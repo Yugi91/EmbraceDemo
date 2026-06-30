@@ -1,0 +1,199 @@
+
+ERROR in node_modules/@opentelemetry/exporter-trace-otlp-http/build/src/platform/node/OTLPTraceExporter.d.ts:1:13 - error TS1005: '=' expected.
+
+1 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
+              ~
+node_modules/@opentelemetry/exporter-trace-otlp-http/build/src/platform/node/OTLPTraceExporter.d.ts:1:49 - error TS1005: ';' expected.
+
+1 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/exporter-trace-otlp-http/build/src/platform/node/OTLPTraceExporter.d.ts:2:13 - error TS1005: '=' expected.
+
+2 import type { OTLPExporterNodeConfigBase } from '@opentelemetry/otlp-exporter-base';
+              ~
+node_modules/@opentelemetry/exporter-trace-otlp-http/build/src/platform/node/OTLPTraceExporter.d.ts:2:49 - error TS1005: ';' expected.
+
+2 import type { OTLPExporterNodeConfigBase } from '@opentelemetry/otlp-exporter-base';
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/OTLPExporterBase.d.ts:1:13 - error TS1005: '=' expected.
+
+1 import type { ExportResult } from '@opentelemetry/core';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/OTLPExporterBase.d.ts:1:35 - error TS1005: ';' expected.
+
+1 import type { ExportResult } from '@opentelemetry/core';
+                                    ~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/OTLPExporterBase.d.ts:2:13 - error TS1005: '=' expected.
+
+2 import type { IOtlpExportDelegate } from './otlp-export-delegate';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/OTLPExporterBase.d.ts:2:42 - error TS1005: ';' expected.
+
+2 import type { IOtlpExportDelegate } from './otlp-export-delegate';
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:3:13 - error TS1005: '=' expected.
+
+3 import type * as http from 'http';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:3:18 - error TS1005: ';' expected.
+
+3 import type * as http from 'http';
+                   ~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:3:23 - error TS1005: ';' expected.
+
+3 import type * as http from 'http';
+                        ~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:3:28 - error TS1005: ';' expected.
+
+3 import type * as http from 'http';
+                             ~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:4:13 - error TS1005: '=' expected.
+
+4 import type * as https from 'https';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:4:18 - error TS1005: ';' expected.
+
+4 import type * as https from 'https';
+                   ~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:4:24 - error TS1005: ';' expected.
+
+4 import type * as https from 'https';
+                         ~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:4:29 - error TS1005: ';' expected.
+
+4 import type * as https from 'https';
+                              ~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:5:13 - error TS1005: '=' expected.
+
+5 import type { OTLPExporterConfigBase } from './legacy-base-configuration';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:5:45 - error TS1005: ';' expected.
+
+5 import type { OTLPExporterConfigBase } from './legacy-base-configuration';
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:6:13 - error TS1005: '=' expected.
+
+6 import type { HttpAgentFactory } from './otlp-node-http-configuration';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/legacy-node-configuration.d.ts:6:39 - error TS1005: ';' expected.
+
+6 import type { HttpAgentFactory } from './otlp-node-http-configuration';
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/shared-configuration.d.ts:1:13 - error TS1005: '=' expected.
+
+1 import type { HeadersFactory } from './otlp-http-configuration';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/configuration/shared-configuration.d.ts:1:37 - error TS1005: ';' expected.
+
+1 import type { HeadersFactory } from './otlp-http-configuration';
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:3:1 - error TS1128: Declaration or statement expected.
+
+3 export type { ExportResponse, ExportResponseFailure, ExportResponseSuccess, ExportResponseRetryable, } from './export-response';
+  ~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:3:13 - error TS1005: ';' expected.
+
+3 export type { ExportResponse, ExportResponseFailure, ExportResponseSuccess, ExportResponseRetryable, } from './export-response';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:3:102 - error TS1109: Expression expected.
+
+3 export type { ExportResponse, ExportResponseFailure, ExportResponseSuccess, ExportResponseRetryable, } from './export-response';
+                                                                                                       ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:3:109 - error TS1005: ';' expected.
+
+3 export type { ExportResponse, ExportResponseFailure, ExportResponseSuccess, ExportResponseRetryable, } from './export-response';
+                                                                                                              ~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:4:1 - error TS1128: Declaration or statement expected.
+
+4 export type { IExporterTransport } from './exporter-transport';
+  ~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:4:13 - error TS1005: ';' expected.
+
+4 export type { IExporterTransport } from './exporter-transport';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:4:41 - error TS1005: ';' expected.
+
+4 export type { IExporterTransport } from './exporter-transport';
+                                          ~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:6:1 - error TS1128: Declaration or statement expected.
+
+6 export type { OtlpSharedConfiguration } from './configuration/shared-configuration';
+  ~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:6:13 - error TS1005: ';' expected.
+
+6 export type { OtlpSharedConfiguration } from './configuration/shared-configuration';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:6:46 - error TS1005: ';' expected.
+
+6 export type { OtlpSharedConfiguration } from './configuration/shared-configuration';
+                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:8:1 - error TS1128: Declaration or statement expected.
+
+8 export type { OTLPExporterNodeConfigBase } from './configuration/legacy-node-configuration';
+  ~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:8:13 - error TS1005: ';' expected.
+
+8 export type { OTLPExporterNodeConfigBase } from './configuration/legacy-node-configuration';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:8:49 - error TS1005: ';' expected.
+
+8 export type { OTLPExporterNodeConfigBase } from './configuration/legacy-node-configuration';
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:9:1 - error TS1128: Declaration or statement expected.
+
+9 export type { OTLPExporterConfigBase } from './configuration/legacy-base-configuration';
+  ~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:9:13 - error TS1005: ';' expected.
+
+9 export type { OTLPExporterConfigBase } from './configuration/legacy-base-configuration';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:9:45 - error TS1005: ';' expected.
+
+9 export type { OTLPExporterConfigBase } from './configuration/legacy-base-configuration';
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:10:1 - error TS1128: Declaration or statement expected.
+
+10 export type { IOtlpExportDelegate } from './otlp-export-delegate';
+   ~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:10:13 - error TS1005: ';' expected.
+
+10 export type { IOtlpExportDelegate } from './otlp-export-delegate';
+               ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/index.d.ts:10:42 - error TS1005: ';' expected.
+
+10 export type { IOtlpExportDelegate } from './otlp-export-delegate';
+                                            ~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:1:13 - error TS1005: '=' expected.
+
+1 import type { OtlpSharedConfiguration } from './configuration/shared-configuration';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:1:46 - error TS1005: ';' expected.
+
+1 import type { OtlpSharedConfiguration } from './configuration/shared-configuration';
+                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:2:13 - error TS1005: '=' expected.
+
+2 import type { ISerializer } from '@opentelemetry/otlp-transformer';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:2:34 - error TS1005: ';' expected.
+
+2 import type { ISerializer } from '@opentelemetry/otlp-transformer';
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:3:13 - error TS1005: '=' expected.
+
+3 import type { IExporterTransport } from './exporter-transport';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:3:41 - error TS1005: ';' expected.
+
+3 import type { IExporterTransport } from './exporter-transport';
+                                          ~~~~~~~~~~~~~~~~~~~~~~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:4:13 - error TS1005: '=' expected.
+
+4 import type { IOtlpExportDelegate } from './otlp-export-delegate';
+              ~
+node_modules/@opentelemetry/otlp-exporter-base/build/src/otlp-network-export-delegate.d.ts:4:42 - error TS1005: ';' expected.
+
+4 import type { IOtlpExportDelegate } from './otlp-export-delegate';
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~
+
+ng build --prod exit code: 1
