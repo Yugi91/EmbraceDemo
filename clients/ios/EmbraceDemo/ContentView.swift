@@ -24,7 +24,9 @@ struct ContentView: View {
           button("caught_error", "Caught Error (handled · E7)", background: true) {
             actions.caughtError()
           }
-        }
+          button("network", "Network (real GET · L2)", background: true) { actions.network() }
+          button("oom", "OOM (allocate · L3)", background: true) { actions.oom() }
+}
         Section(header: Text("Note")) {
           Text(
             "Embrace arm reports under the bundle-id service.name and drops contract attrs; "

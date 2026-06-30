@@ -9,11 +9,15 @@ import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.logs.Severity
 import io.opentelemetry.api.trace.StatusCode
 import java.util.concurrent.Executors
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /** The 5 demo actions, each emitting telemetry per SCHEMA_CONTRACT. */
 class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val bg = Executors.newSingleThreadExecutor()
+    private val http = OkHttpClient()
+    private val oomChunks = mutableListOf<ByteArray>()   // retained so GC can't reclaim (oom)
     private fun actionAttr(name: String) =
         Attributes.of(AttributeKey.stringKey("action.name"), name)
 
@@ -134,5 +138,61 @@ class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
         Telemetry.log(ex.message ?: "crash", Severity.ERROR, actionAttr("crash"))
         Telemetry.flush()
         throw ex
+    }
+
+    /** Real HTTP GET (L2). Embrace auto-captures OkHttp → shows in the Network view. */
+    fun network() = bg.execute {
+        val t0 = System.currentTimeMillis()
+        val url = "https://jsonplaceholder.typicode.com/todos/1"
+        val s = Telemetry.newSpan(
+            "network",
+            Attributes.builder()
+                .put("action.name", "network").put("http.url", url).put("http.method", "GET").build()
+        )
+        try {
+            http.newCall(Request.Builder().url(url).get().build()).execute().use { resp ->
+                val body = resp.body?.bytes() ?: ByteArray(0)
+                s.setAttribute("http.status_code", resp.code.toLong())
+                s.setAttribute("http.response_size", body.size.toLong())
+                s.addEvent("network.response")
+                if (resp.isSuccessful) {
+                    s.end()
+                    embRecord("network", t0)
+                    Telemetry.log(
+                        "network GET ok (HTTP ${resp.code})", Severity.INFO,
+                        Attributes.builder().put("action.name", "network")
+                            .put("http.status_code", resp.code.toLong())
+                            .put("http.response_size", body.size.toLong()).build()
+                    )
+                } else {
+                    s.setStatus(StatusCode.ERROR, "network failed: HTTP ${resp.code}"); s.end()
+                    embRecord("network", t0)
+                    Telemetry.log(
+                        "network GET failed (HTTP ${resp.code})", Severity.ERROR,
+                        Attributes.builder().put("action.name", "network")
+                            .put("http.status_code", resp.code.toLong()).build()
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            s.recordException(e)
+            s.setStatus(StatusCode.ERROR, "network error"); s.end()
+            embRecord("network", t0)
+            Telemetry.log(
+                "network GET failed: ${e.message}", Severity.ERROR,
+                Attributes.builder().put("action.name", "network")
+                    .put("exception.type", e.javaClass.name)
+                    .put("exception.message", e.message ?: "").build()
+            )
+        }
+    }
+
+    /** Allocate 4MB chunks unbounded until the process is OutOfMemory-killed (L3, intended). */
+    fun oom() = bg.execute {
+        Telemetry.log("oom: allocating until killed", Severity.WARN, actionAttr("oom"))
+        while (true) {
+            oomChunks.add(ByteArray(4 * 1024 * 1024))   // 4MB, retained → no GC reclaim
+            Thread.sleep(20)
+        }
     }
 }

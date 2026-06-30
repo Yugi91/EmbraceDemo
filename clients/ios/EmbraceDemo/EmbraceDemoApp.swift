@@ -77,8 +77,12 @@ enum Autofire {
         case "caught", "caught_error": actions.caughtError()
         case "anr", "hang", "app-hang": runOnMainSync { actions.appHang() }
         case "frames", "jank": runOnMainSync { actions.frames() }
+        case "network": actions.network()
         case "crash":
           DispatchQueue.main.async { actions.crash() }  // terminates the process
+          return
+        case "oom":
+          actions.oom()  // allocates until memory-killed (never returns)
           return
         default: NSLog("EMBRACE-DEMO: AUTOFIRE unknown action '\(name)'")
         }

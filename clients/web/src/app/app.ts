@@ -43,6 +43,8 @@ export class App implements OnInit {
       workflowOk: () => this.runWorkflow(false),
       workflowFail: () => this.runWorkflow(true),
       customEvent: () => this.runCustomEvent(),
+      network: () => this.runNetwork(),
+      oom: () => this.runOom(),
       crash: () => this.telemetry.triggerCrash(),
       flush: () => this.telemetry.flush(),
       ready: () => this.telemetry.ready,
@@ -91,6 +93,28 @@ export class App implements OnInit {
     try {
       const { syncFailed } = await this.telemetry.workflow(forceFail);
       this.log(`workflow: done, sync ${syncFailed ? 'FAILED (span status ERROR)' : 'OK'}`);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async runNetwork(): Promise<void> {
+    this.busy.set(true);
+    this.log('network: real fetch GET jsonplaceholder.typicode.com/todos/1 (L2)...');
+    try {
+      const { ok, status } = await this.telemetry.network();
+      this.log(`network: ${ok ? 'OK' : 'FAILED'} (HTTP ${status}) — see Embrace Network view`);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async runOom(): Promise<void> {
+    this.busy.set(true);
+    this.log('oom: allocating large typed arrays — memory pressure, NOT an OS OOM-kill (L3)...');
+    try {
+      const { iterations, allocatedMb } = await this.telemetry.oom();
+      this.log(`oom: allocated ~${allocatedMb} MB over ${iterations} iterations (browser has no OS OOM-kill)`);
     } finally {
       this.busy.set(false);
     }

@@ -184,6 +184,112 @@ export class TelemetryService {
     return { syncFailed: syncShouldFail };
   }
 
+  /**
+   * Action 5 — network [LEVEL 2]: perform a REAL HTTP GET via fetch. The Embrace Web SDK
+   * auto-captures fetch/XHR, so this request also surfaces in Embrace's Network view under the
+   * jsonplaceholder.typicode.com domain. We additionally wrap it in a `network` span carrying
+   * the http.* attributes and log success/failure like the other actions.
+   */
+  async network(): Promise<{ ok: boolean; status: number }> {
+    this.provider.breadcrumb('action:network');
+    const url = 'https://jsonplaceholder.typicode.com/todos/1';
+    const method = 'GET';
+    return this.provider.startActiveSpan(
+      'network',
+      this.attrs('network', { 'http.url': url, 'http.method': method }),
+      async (span) => {
+        span.addEvent('network.request', { 'http.url': url, 'http.method': method });
+        try {
+          const res = await fetch(url, { method });
+          span.setAttributes({ 'http.status_code': res.status });
+          if (!res.ok) {
+            const err = new Error(`network request failed: HTTP ${res.status} from ${url}`);
+            err.name = 'NetworkError';
+            span.addEvent('network.failed', { 'http.status_code': res.status });
+            span.fail(err, { 'http.status_code': res.status });
+            this.provider.logMessage(
+              `network: GET ${url} failed (HTTP ${res.status})`,
+              'error',
+              this.attrs('network', { 'http.url': url, 'http.status_code': res.status })
+            );
+            return { ok: false, status: res.status };
+          }
+          span.addEvent('network.succeeded', { 'http.status_code': res.status });
+          this.provider.logMessage(
+            `network: GET ${url} ok (HTTP ${res.status})`,
+            'info',
+            this.attrs('network', { 'http.url': url, 'http.status_code': res.status })
+          );
+          return { ok: true, status: res.status };
+        } catch (err) {
+          const e = err instanceof Error ? err : new Error(String(err));
+          span.fail(e, { 'http.url': url, 'http.method': method });
+          this.provider.logException(e, this.attrs('network', { 'http.url': url }));
+          return { ok: false, status: 0 };
+        }
+      }
+    );
+  }
+
+  /**
+   * Action 6 — oom [LEVEL 3]: best-effort memory-pressure action.
+   *
+   * NOTE: a true OS OOM-kill is NOT applicable to a browser tab — browsers sandbox each tab's
+   * memory and respond to exhaustion with a per-tab "Aw, Snap"/allocation failure, not an OS
+   * OOM signal. So this demonstrates ALLOCATION PRESSURE, not an OS OOM-kill. We retain a
+   * growing array of large typed arrays (32 MiB each), bounded to ~200 iterations so we don't
+   * hard-freeze the dev machine, logging progress along the way.
+   */
+  async oom(): Promise<{ iterations: number; allocatedMb: number }> {
+    this.provider.breadcrumb('action:oom');
+    const CHUNK_BYTES = 32 * 1024 * 1024; // 32 MiB per allocation
+    const MAX_ITERATIONS = 200; // bound so the dev machine doesn't hard-freeze
+    return this.provider.startActiveSpan(
+      'oom',
+      this.attrs('oom', { 'oom.chunk_bytes': CHUNK_BYTES, 'oom.max_iterations': MAX_ITERATIONS }),
+      async (span) => {
+        // Retained so the allocations can't be garbage-collected mid-loop.
+        const retained: Uint8Array[] = [];
+        let i = 0;
+        try {
+          for (; i < MAX_ITERATIONS; i++) {
+            // Touch the first byte so the engine actually commits the pages.
+            const chunk = new Uint8Array(CHUNK_BYTES);
+            chunk[0] = 1;
+            retained.push(chunk);
+            if (i % 25 === 0) {
+              const allocatedMb = Math.round(((i + 1) * CHUNK_BYTES) / (1024 * 1024));
+              span.addEvent('oom.progress', { 'oom.iteration': i, 'oom.allocated_mb': allocatedMb });
+              this.provider.logMessage(
+                `oom: allocated ~${allocatedMb} MB (iteration ${i})`,
+                'warning',
+                this.attrs('oom', { 'oom.iteration': i, 'oom.allocated_mb': allocatedMb })
+              );
+              // Yield so progress logs/spans can flush and the tab stays responsive.
+              await new Promise((r) => setTimeout(r, 0));
+            }
+          }
+        } catch (err) {
+          // An allocation failure here is the browser's per-tab limit, NOT an OS OOM-kill.
+          const e = err instanceof Error ? err : new Error(String(err));
+          span.fail(e, { 'oom.iteration': i });
+          this.provider.logException(e, this.attrs('oom', { 'oom.iteration': i }));
+        }
+        const allocatedMb = Math.round((retained.length * CHUNK_BYTES) / (1024 * 1024));
+        span.setAttributes({ 'oom.iterations': retained.length, 'oom.allocated_mb': allocatedMb });
+        span.addEvent('oom.heavy_allocation', { 'oom.allocated_mb': allocatedMb });
+        this.provider.logMessage(
+          'oom: heavy allocation (browser has no OS OOM-kill — see note)',
+          'warning',
+          this.attrs('oom', { 'oom.iterations': retained.length, 'oom.allocated_mb': allocatedMb })
+        );
+        // Drop the references so the heap can be reclaimed after the action completes.
+        retained.length = 0;
+        return { iterations: i, allocatedMb };
+      }
+    );
+  }
+
   /** B3 helper — record a session/user-journey breadcrumb. */
   breadcrumb(name: string): void {
     this.provider.breadcrumb(name);

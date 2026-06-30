@@ -43,6 +43,7 @@ class MainActivity : ComponentActivity() {
         h.postDelayed({ actions.caughtError() }, t); t += 2500
         h.postDelayed({ actions.frames() }, t); t += 3500
         h.postDelayed({ actions.anr() }, t); t += 9000
+        h.postDelayed({ actions.network() }, t); t += 2500
         h.postDelayed({ actions.crash() }, t)   // crash last — terminates the app
     }
 }
@@ -62,6 +63,8 @@ private fun DemoScreen(actions: DemoActions) {
                 Button(onClick = { actions.caughtError() }) { Text("caught error") }
                 Button(onClick = { actions.frames() }) { Text("frames (jank)") }
                 Button(onClick = { actions.anr() }) { Text("ANR (block 6s)") }
+                Button(onClick = { actions.network() }) { Text("network") }
+                Button(onClick = { actions.oom() }) { Text("OOM (allocate)") }
                 Button(onClick = { actions.crash() }) { Text("crash") }
             }
         }

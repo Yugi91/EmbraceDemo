@@ -182,10 +182,21 @@ class _DemoHomePageState extends State<DemoHomePage> {
                   onTap: _busy ? null : () => _run('caught', a.caughtError),
                 ),
                 _ActionButton(
+                  label: 'network',
+                  icon: Icons.cloud_download,
+                  onTap: _busy ? null : () => _run('network', a.network),
+                ),
+                _ActionButton(
                   label: 'CRASH',
                   icon: Icons.dangerous,
                   color: Colors.red,
                   onTap: _busy ? null : () => _run('crash', a.crash),
+                ),
+                _ActionButton(
+                  label: 'OOM (allocate)',
+                  icon: Icons.memory,
+                  color: Colors.red,
+                  onTap: _busy ? null : () => _run('oom', a.oom),
                 ),
               ],
             ),

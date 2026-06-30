@@ -36,6 +36,12 @@
     <button id="btn-custom" data-testid="custom-event" (click)="runCustomEvent()">
       custom event <small>B4</small>
     </button>
+    <button id="btn-network" data-testid="network" [disabled]="busy()" (click)="runNetwork()">
+      network <small>real fetch GET (L2)</small>
+    </button>
+    <button id="btn-oom" data-testid="oom" [disabled]="busy()" (click)="runOom()">
+      OOM (allocate) <small>memory pressure, no OS OOM-kill (L3)</small>
+    </button>
   </section>
 
   <section class="console">

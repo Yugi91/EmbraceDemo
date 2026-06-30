@@ -1,4 +1,7 @@
 import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
 
 import 'telemetry/device_context.dart';
 import 'telemetry/telemetry_config.dart';
@@ -138,6 +141,50 @@ class DemoActions {
       await _t.log('caught & reported handled error',
           severity: LogSeverity.warning,
           attributes: {Attr.actionName: 'caught_error'});
+    }
+  }
+
+  /// ACTION 5 — `network` [LEVEL 2]: a REAL HTTP GET. The Embrace SDK
+  /// auto-captures outbound requests, so this external call surfaces in
+  /// Embrace's Network view under jsonplaceholder.typicode.com. We also wrap it
+  /// in a custom span carrying the http.* attrs for parity with the OTel arm.
+  Future<void> network() async {
+    await _t.addBreadcrumb('tapped: network');
+    const url = 'https://jsonplaceholder.typicode.com/todos/1';
+    final span = await _t.startSpan('network', actionName: 'network');
+    await _attachSystemSample(span);
+    await span.setAttribute('http.url', url);
+    await span.setAttribute('http.method', 'GET');
+    await span.addEvent('network.start');
+    try {
+      final res = await http.get(Uri.parse(url));
+      await span.setAttribute('http.status_code', '${res.statusCode}');
+      await span.addEvent('network.end',
+          attributes: {'http.status_code': '${res.statusCode}'});
+      await span.end();
+      await _t.log('network GET $url -> ${res.statusCode}');
+    } catch (e, st) {
+      await span.recordError(e, stackTrace: st);
+      await span.addEvent('network.failed');
+      await span.end(errored: true);
+      await _t.log('network GET $url failed: $e',
+          severity: LogSeverity.error, attributes: {Attr.actionName: 'network'});
+    }
+  }
+
+  /// ACTION 6 — `oom` [LEVEL 3]: allocate memory in an unbounded loop until the
+  /// OS memory-kills the process. We retain references to ever-growing 8 MiB
+  /// blocks so nothing is collected. This WILL terminate the app (intended).
+  Future<void> oom() async {
+    await _t.addBreadcrumb('tapped: oom');
+    await _t.log('oom: allocating until killed',
+        severity: LogSeverity.warning,
+        attributes: {Attr.actionName: 'oom'});
+    await _t.flush(); // give the exporter a chance before the process dies
+    final blocks = <Uint8List>[];
+    while (true) {
+      blocks.add(Uint8List(8 * 1024 * 1024)); // 8 MiB, retained
+      await Future<void>.delayed(const Duration(milliseconds: 10));
     }
   }
 

@@ -5,6 +5,8 @@ import Foundation
 /// `demo_actions.dart` semantics, plus a `frames` (jank) action for E4.
 final class DemoActions {
   private let t: TelemetryService
+  /// Retained allocations for the `oom` action — grows unbounded until the OS kills us.
+  private var blocks: [[UInt8]] = []
   init(_ t: TelemetryService) { self.t = t }
 
   /// Attach the per-action `system.*` / `network.*` sample to a span.
@@ -152,6 +154,61 @@ final class DemoActions {
       t.log(
         "caught & reported handled error", severity: .warning,
         attributes: [Attr.actionName: "caught_error"])
+    }
+  }
+
+  /// ACTION — `network` (LEVEL 2): a REAL HTTP GET wrapped in a span. The Embrace iOS
+  /// SDK auto-captures URLSession requests, so this external call also surfaces in
+  /// Embrace's Network view under the jsonplaceholder.typicode.com domain. (The local
+  /// OTLP collector URL is excluded by the self-tracing guard in the Embrace arm, so
+  /// only genuine app traffic like this is captured.)
+  func network() {
+    t.addBreadcrumb("tapped: network")
+    let span = t.startSpan("network", actionName: "network")
+    attachSystemSample(span)
+    let urlString = "https://jsonplaceholder.typicode.com/todos/1"
+    span.setAttribute("http.url", urlString)
+    span.setAttribute("http.method", "GET")
+    span.addEvent("network.request.start")
+
+    // Synchronous wait so the span brackets the real request (this action runs off the
+    // main thread, like the other background actions).
+    let sem = DispatchSemaphore(value: 0)
+    var statusCode: Int?
+    var requestError: Error?
+    let task = URLSession.shared.dataTask(with: URL(string: urlString)!) { _, response, error in
+      statusCode = (response as? HTTPURLResponse)?.statusCode
+      requestError = error
+      sem.signal()
+    }
+    task.resume()
+    sem.wait()
+
+    if let error = requestError {
+      span.recordError(error)
+      span.addEvent("network.request.failed")
+      span.end(errored: true)
+      t.log("network failed: \(error)", severity: .error, attributes: [Attr.actionName: "network"])
+    } else {
+      let code = statusCode ?? 0
+      span.setAttribute("http.status_code", String(code))
+      span.addEvent("network.request.end", attributes: ["http.status_code": String(code)])
+      span.end()
+      t.log("network completed (HTTP \(code))")
+    }
+  }
+
+  /// ACTION — `oom` (LEVEL 3): allocate memory in an unbounded loop until the OS
+  /// memory-kills the process. Each iteration retains another large block, so the
+  /// footprint only grows. This WILL terminate the app (intended).
+  func oom() {
+    t.addBreadcrumb("tapped: oom")
+    t.log("oom: allocating until killed", severity: .warning, attributes: [Attr.actionName: "oom"])
+    t.flush()  // give the exporter a chance before the process is killed
+    while true {
+      // Retain a fresh 8 MiB block each pass; references are never released.
+      blocks.append([UInt8](repeating: 0, count: 8 * 1024 * 1024))
+      Thread.sleep(forTimeInterval: 0.02)
     }
   }
 
