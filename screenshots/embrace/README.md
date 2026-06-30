@@ -15,9 +15,16 @@ full-screen (1920×1080) by attaching to the logged-in browser. App IDs + tokens
 | **Flutter** | DemoFlutter (`tzb7f`) | sim screen + buttons | `traces`/`sessions`/`issues`/`overview`/`exceptions` |
 
 ## What the per-case views show
-- **Traces → Root Spans List** = every demo action as a named row (delay · crash · caught_error · workflow)
+- **Traces → Root Spans List** = every demo action as a named row (metric · crash · caught_error · workflow)
   with Count / P90 / P95 — the clearest "which case" index.
-- **Trace detail** (e.g. `case-workflow`) = the span waterfall: `workflow → capture → save → sync`.
+- **Trace detail** (e.g. `case-workflow`, `trace-metric-waterfall`) = the span waterfall. The `metric` case
+  (replaces the old `delay`) builds a **concurrent + nested perf-span tree**: `metric → {A ∥ B}`, and inside
+  A `→ C → D` sequentially, capturing each task's duration. On the dashboard the instance shows **Total Spans
+  5** with **Longest Span = A** (A = C+D ≈ 210ms > B 150ms), root ≈ 220ms — see `<ios|web|flutter>/deep/
+  trace-metric-waterfall.png`. **FINDING:** the metric tree nests on **iOS / Web / Flutter** Embrace cloud,
+  but **NOT on Android** — the Embrace Android SDK does not capture custom spans created on raw worker
+  `Thread`s, so the Android metric tree only reaches **Grafana via OTel-Java** (the OTel parent-child works
+  everywhere). `workflow` still shows `workflow → capture → save → sync`.
 - **Issues / Exceptions** = crash & handled errors by name; on **mobile**, Embrace adds **crash grouping +
   ANR detection** (Android `issues` shows both) — its server-side strength that the Grafana self-host path
   does NOT have (finding F2).
