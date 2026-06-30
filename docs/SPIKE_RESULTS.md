@@ -9,9 +9,13 @@ Legend: ✅ confirmed working · ❌ confirmed not working (with evidence) · �
 ## A. BASELINE captures (Embrace getting-started — must be DEMONSTRATED, not just assumed ✅)
 Requires dual-export → real data on the **Embrace cloud dashboard** + Grafana.
 
-> **Embrace cloud dashboard screenshots: SKIPPED by user decision (2026-06-26) → Grafana-only.** The
-> "screenshot the Embrace cloud dashboard" sub-AC is therefore PENDING/N-A. no-account OTLP→Grafana
-> already demonstrates the pipeline + findings F1/F2; every ✅ below is verified on **Grafana**.
+> **UPDATE 2026-06-29 — dual-export to Embrace cloud DONE for all 4 clients** (the 2026-06-26
+> "Grafana-only" decision was reversed). The "screenshot the Embrace cloud dashboard" sub-AC is now
+> SATISFIED: per-case + app-UI captures live in `screenshots/embrace/<web|ios|android|flutter>/`
+> (App IDs Web `ctac2` · iOS `gq23k` · Android `2tbxs` · Flutter `tzb7f`). The ✅ verdicts below remain
+> **Grafana-verified** (the F1/F2 findings are about the self-host path); the Embrace-cloud captures are the
+> baseline-AC evidence. **For a consolidated "what self-host/Grafana-only loses vs Embrace cloud" table see
+> [`SELFHOST_GAP_ANALYSIS.md`](./SELFHOST_GAP_ANALYSIS.md).**
 
 | ID | Capture | Web (Ng8) | Web (Ng20) | Android | iOS | Flutter | Evidence |
 |----|---------|:--:|:--:|:--:|:--:|:--:|---|
@@ -45,6 +49,7 @@ Requires dual-export → real data on the **Embrace cloud dashboard** + Grafana.
 - **O3** iOS allows 1 crash handler → Embrace/Sentry vs incumbent Crashlytics — document.
 
 ---
-_Last updated: 2026-06-26 — all 4 client platforms (Web Ng20 / Flutter / iOS / Android) built & verified
-in Grafana; Angular 8 spike ❌; E1–E8 + F1/F2 resolved. Embrace cloud-dashboard screenshots skipped per
-user decision (Grafana-only)._
+_Last updated: 2026-06-29 — all 4 client platforms (Web Ng20 / Flutter / iOS / Android) built & verified
+in Grafana; Angular 8 spike ❌; E1–E8 + F1/F2 resolved. Dual-export to the Embrace cloud dashboard now
+DONE for all 4 clients (per-case + app-UI screenshots in `screenshots/embrace/`). Self-host gap table:
+`SELFHOST_GAP_ANALYSIS.md`._
