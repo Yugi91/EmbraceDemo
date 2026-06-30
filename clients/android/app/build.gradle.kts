@@ -85,6 +85,9 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
 
+    // Kotlin coroutines — structured concurrency for the `metric` perf-span case (A‖B, A→C→D).
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
     // ---- Embrace Android SDK + its OTel-Kotlin exporter ----
     // On BOTH arms now: the project compiles with Kotlin 2.3.0, so the kotlin-stdlib 2.3.0 these
     // drag in no longer conflicts. This lets the demo route custom spans through Embrace's TracingApi

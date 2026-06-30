@@ -9,6 +9,10 @@ import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.logs.Severity
 import io.opentelemetry.api.trace.StatusCode
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -35,110 +39,95 @@ class DemoActions(@Suppress("UNUSED_PARAMETER") ctx: Context) {
     }
 
     /**
-     * Parent-aware Embrace span (Embrace 9.0 TracingApi) so the metric tree is **nested** on the
-     * Embrace cloud dashboard, not flat like [embRecord]. Returns the started [EmbraceSpan] (or null
-     * in the `otel` arm / on failure). Pass `parent=null` for a root span. Call [embStop] when done.
+     * Parent-aware Embrace span handle (Embrace 9.0 TracingApi) used to NEST the metric tree on the
+     * Embrace cloud dashboard. `startMs` back-dates the start so the parent's duration reflects the real
+     * work. Returns null in the `otel` arm / on failure (children then record flat). Call [embStop] when done.
      */
     private fun embStart(
         name: String,
         parent: io.embrace.android.embracesdk.spans.EmbraceSpan? = null,
+        startMs: Long? = null,
     ): io.embrace.android.embracesdk.spans.EmbraceSpan? {
         if (BuildConfig.TELEMETRY_TOOL != "embrace") return null
         return try {
-            io.embrace.android.embracesdk.Embrace.getInstance().startSpan(name, parent)
+            io.embrace.android.embracesdk.Embrace.getInstance().startSpan(name, parent, startMs)
         } catch (_: Throwable) { null }
     }
 
-    private fun embStop(span: io.embrace.android.embracesdk.spans.EmbraceSpan?) {
+    private fun embStop(span: io.embrace.android.embracesdk.spans.EmbraceSpan?, endMs: Long? = null) {
         if (span == null) return
-        try { span.stop() } catch (_: Throwable) { /* SDK not started in this arm — ignore */ }
+        try { span.stop(null, endMs) } catch (_: Throwable) { /* ignore */ }
+    }
+
+    /** Parent-aware Embrace completed span via the PROVEN `recordCompletedSpan` primitive (the one
+     *  `workflow` uses and that demonstrably reaches the Android Embrace cloud). Nests under [parent]
+     *  when non-null; records flat (still surfaces) when null. */
+    private fun embRecordChild(
+        name: String, startMs: Long, endMs: Long,
+        parent: io.embrace.android.embracesdk.spans.EmbraceSpan?,
+    ) {
+        if (BuildConfig.TELEMETRY_TOOL != "embrace") return
+        try {
+            io.embrace.android.embracesdk.Embrace.getInstance()
+                .recordCompletedSpan(name, startMs, endMs, parent = parent)
+        } catch (_: Throwable) {
+            try { io.embrace.android.embracesdk.Embrace.getInstance().recordCompletedSpan(name, startMs, endMs) } catch (_: Throwable) {}
+        }
     }
 
     /**
-     * Builds a concurrent + nested perf-span tree to exercise the rich "metric" case in both arms:
-     *
-     *   metric            (ROOT; created on the bg thread)
-     *   ├── A             (own thread, IN PARALLEL with B)
-     *   │   ├── C         (own thread; SEQUENTIAL — first,  ~120ms)
-     *   │   └── D         (own thread; SEQUENTIAL — after C, ~90ms)
-     *   └── B             (own thread, IN PARALLEL with A,  ~150ms)
-     *
-     * Each node opens an OTel-Java child span (correct `parent` arg) AND, in the embrace arm, a
-     * parent-aware Embrace child span via [embStart]; spans end bottom-up once their `Thread.sleep`
-     * work finishes. `metric` ends only after A and B have both joined → its duration ≈ max(A, B).
+     * `metric` perf-span case — a concurrent + nested tree with captured durations:
+     *   metric → { A → (C then D), B },  with A ‖ B.
+     * Concurrency uses Kotlin COROUTINES (async on Dispatchers.Default; C→D sequential inside A).
+     * OTel-Java child spans (→ Grafana) are opened inside the coroutines with explicit parents.
+     * OTel-Java child spans (→ Grafana) open inside the coroutines with explicit parents. For the
+     * Embrace **cloud** tree, per-task start/end are measured, then emitted on the bg thread: parents
+     * `metric`/`A` via `startSpan(parent, startMs)` (back-dated, stopped at their real end), leaves
+     * C/D/B via `recordCompletedSpan(parent=…)`. Yields Total Spans 5, Longest Span = A.
      */
     fun metric() = bg.execute {
-        val rootStart = System.currentTimeMillis()
-        val root = Telemetry.newSpan("metric", Telemetry.sampleAttrs("metric"))
-        root.addEvent("metric.started")
-        val embRoot = embStart("metric", null)
-
-        // Runs a leaf: OTel child span (under `otelParent`) + Embrace child span (under `embParent`),
-        // sleeps `workMs` to capture a real duration, then ends both spans.
-        fun runLeaf(
-            name: String,
-            workMs: Long,
-            otelParent: io.opentelemetry.api.trace.Span,
-            embParent: io.embrace.android.embracesdk.spans.EmbraceSpan?,
-        ) {
-            val span = Telemetry.newSpan(
-                name,
-                Attributes.builder()
-                    .put("action.name", "metric")
-                    .put("task.name", name)
-                    .put("work.ms", workMs)
-                    .put("thread.name", Thread.currentThread().name)
-                    .build(),
-                otelParent
-            )
-            val embSpan = embStart(name, embParent)
-            span.addEvent("$name.started")
-            Thread.sleep(workMs)
-            span.addEvent("$name.done")
-            span.end()
-            embStop(embSpan)
+        fun mAttrs(task: String) = Attributes.builder()
+            .put("action.name", "metric").put("task.name", task).build()
+        val mStart = System.currentTimeMillis()
+        val otelRoot = Telemetry.newSpan("metric", Telemetry.sampleAttrs("metric"))
+        otelRoot.addEvent("metric.started")
+        val seg = java.util.concurrent.ConcurrentHashMap<String, LongArray>()   // task -> [start, end]
+        runBlocking {
+            val jobA = async(Dispatchers.Default) {           // A ‖ B
+                val aStart = System.currentTimeMillis()
+                val otelA = Telemetry.newSpan("A", mAttrs("A"), otelRoot)
+                val cStart = System.currentTimeMillis()       // C — sequential, first
+                val otelC = Telemetry.newSpan("C", mAttrs("C"), otelA); delay(120); otelC.end()
+                seg["C"] = longArrayOf(cStart, System.currentTimeMillis())
+                val dStart = System.currentTimeMillis()       // D — sequential, after C
+                val otelD = Telemetry.newSpan("D", mAttrs("D"), otelA); delay(90); otelD.end()
+                seg["D"] = longArrayOf(dStart, System.currentTimeMillis())
+                otelA.end()
+                seg["A"] = longArrayOf(aStart, System.currentTimeMillis())
+            }
+            val jobB = async(Dispatchers.Default) {
+                val bStart = System.currentTimeMillis()
+                val otelB = Telemetry.newSpan("B", mAttrs("B"), otelRoot); delay(150); otelB.end()
+                seg["B"] = longArrayOf(bStart, System.currentTimeMillis())
+            }
+            jobA.await(); jobB.await()
         }
+        otelRoot.addEvent("metric.completed"); otelRoot.end()
+        val mEnd = System.currentTimeMillis()
 
-        // A: own thread, parallel with B. Inside: C then D, sequential (each its own thread).
-        val threadA = Thread {
-            val aStart = System.currentTimeMillis()
-            val spanA = Telemetry.newSpan(
-                "A",
-                Attributes.builder()
-                    .put("action.name", "metric")
-                    .put("task.name", "A")
-                    .put("thread.name", Thread.currentThread().name)
-                    .build(),
-                root
-            )
-            val embA = embStart("A", embRoot)
-            spanA.addEvent("A.started")
-
-            // C — sequential first.
-            val threadC = Thread { runLeaf("C", 120L, spanA, embA) }
-            threadC.start(); threadC.join()
-            // D — sequential after C.
-            val threadD = Thread { runLeaf("D", 90L, spanA, embA) }
-            threadD.start(); threadD.join()
-
-            spanA.setAttribute("work.ms", System.currentTimeMillis() - aStart)
-            spanA.addEvent("A.done")
-            spanA.end()
-            embStop(embA)
+        // Embrace cloud tree — sequential emission on the bg thread (recordCompletedSpan = proven).
+        if (BuildConfig.TELEMETRY_TOOL == "embrace") {
+            val aSeg = seg["A"]
+            val embRoot = embStart("metric", null, mStart)
+            val embA = embStart("A", embRoot, aSeg?.get(0))
+            seg["C"]?.let { embRecordChild("C", it[0], it[1], embA) }
+            seg["D"]?.let { embRecordChild("D", it[0], it[1], embA) }
+            seg["B"]?.let { embRecordChild("B", it[0], it[1], embRoot) }
+            embStop(embA, aSeg?.get(1)); embStop(embRoot, mEnd)
+            if (embRoot == null) embRecordChild("metric", mStart, mEnd, null)      // flat fallback
+            if (embA == null) aSeg?.let { embRecordChild("A", it[0], it[1], null) }
         }
-        // B: own thread, parallel with A.
-        val threadB = Thread { runLeaf("B", 150L, root, embRoot) }
-
-        threadA.start(); threadB.start()   // A ‖ B
-        threadA.join(); threadB.join()     // join both before ending the root
-
-        root.setAttribute("work.ms", System.currentTimeMillis() - rootStart)
-        root.addEvent("metric.completed")
-        root.end()
-        embStop(embRoot)
-        Telemetry.log(
-            "metric perf tree done (A‖B, A→C→D)", Severity.INFO, actionAttr("metric")
-        )
+        Telemetry.log("metric perf tree done (A‖B, A→C→D)", Severity.INFO, actionAttr("metric"))
     }
 
     fun workflow(forceFail: Boolean) = bg.execute {
