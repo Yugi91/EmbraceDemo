@@ -48,7 +48,14 @@ Platform-honest differences (captured, not hidden):
 - **Flutter crash → Exceptions, not Crashes** — a Dart guarded-zone error; the native Crashes view shows the empty state.
 - **iOS has no ANR view** — the iOS analogue is app-hang; ANR is Android-specific.
 - **Android records flat root spans** (each action a separate row) while **iOS / Flutter** nest `workflow → capture → save → sync` into a true waterfall.
-- **Real-endpoint network**: a `network` action (real HTTP GET to jsonplaceholder.typicode.com) is wired on all 4 clients; captured for **web** so far (`web/deep/network.png`). Android/iOS/Flutter native re-runs to refresh their Network view with the real endpoint are pending.
+- **Real-endpoint network auto-capture — FINDING (per platform).** A `network` action (real HTTP GET to
+  `jsonplaceholder.typicode.com`) is wired on all 4 clients. Whether Embrace **auto-captures** it (zero
+  extra code) into the Network view depends on the HTTP stack:
+  - **Web** (`fetch`) → ✅ auto-captured (`web/deep/network.png` shows `jsonplaceholder.typicode.com`).
+  - **iOS** (`URLSession.shared`) → ✅ auto-captured (`ios/deep/network.png` shows it) — Embrace swizzles URLSession.
+  - **Android** (plain `OkHttpClient`) → ❌ NOT auto-captured — needs the `EmbraceOkHttp3Interceptor` added to the client (or the gradle plugin's network swazzle). `android/deep/network.png` shows only emb-api SDK traffic.
+  - **Flutter** (`package:http` → Dart `HttpClient`) → ❌ NOT auto-captured — Dart's HttpClient uses its own sockets, bypassing the native URLSession that Embrace hooks; needs Dart-side HTTP instrumentation. `flutter/deep/network.png` shows only emb-api traffic.
+- **User Terminated** (Android): `android/deep/user-terminated.png` — 3 user-terminated sessions (recents-swipe), UT-free 97.81%.
 - **Out Of Memory** + **Compare** (2-version) views are not yet populated (need an OOM trigger + a 2nd build — Level 3).
 
 Grafana-side screenshots of the same telemetry: `../20_grafana_overview.png`, `../21_grafana_all_platforms.png`.
