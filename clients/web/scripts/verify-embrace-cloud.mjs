@@ -55,10 +55,10 @@ const isEmbrace = (u) => /emb-api\.com|embrace\.io|embrace\.com|\bemb(race)?[-.]
     await page.waitForFunction(() => window.__demo && window.__demo.ready() === true, { timeout: 12000 }).catch(() => console.warn('  (warn) ready flag not true'));
     console.log(`  ready=${await page.evaluate(() => window.__demo?.ready?.())}, tool=${await page.evaluate(() => window.__demo?.tool?.())}`);
     await page.mouse.click(200, 200);
-    for (const act of ['delay', 'caughtError', 'workflowOk', 'workflowFail', 'customEvent']) {
+    for (const act of ['delay', 'network', 'caughtError', 'workflowOk', 'workflowFail', 'customEvent']) {
       console.log(`  firing: ${act}`);
       await page.evaluate((a) => window.__demo[a](), act);
-      await sleep(300);
+      await sleep(act === 'network' ? 1500 : 300);   // network does a real fetch — give it time
     }
     await sleep(1500);
     await page.evaluate(() => window.__demo.flush()).catch(() => {});
