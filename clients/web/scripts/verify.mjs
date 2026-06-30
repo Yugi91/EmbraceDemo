@@ -85,8 +85,8 @@ async function runArm(browser, baseUrl, tool) {
   await page.mouse.move(200, 200);
   await page.mouse.click(200, 200);
 
-  console.log('  firing: delay');
-  await page.evaluate(() => window.__demo.delay());
+  console.log('  firing: metric');
+  await page.evaluate(() => window.__demo.metric());
   console.log('  firing: caught-error');
   await page.evaluate(() => window.__demo.caughtError());
   console.log('  firing: workflow (ok)');

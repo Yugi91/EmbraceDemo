@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
     private fun runAutofire() {
         val h = Handler(Looper.getMainLooper())
         var t = 1500L
-        h.postDelayed({ actions.delay() }, t); t += 2500
+        h.postDelayed({ actions.metric() }, t); t += 2500
         h.postDelayed({ actions.workflow(false) }, t); t += 2500
         h.postDelayed({ actions.workflow(true) }, t); t += 2500
         h.postDelayed({ actions.caughtError() }, t); t += 2500
@@ -57,7 +57,7 @@ private fun DemoScreen(actions: DemoActions) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text("EmbraceGrafanaDemo · Android · tool=${BuildConfig.TELEMETRY_TOOL}")
-                Button(onClick = { actions.delay() }) { Text("delay") }
+                Button(onClick = { actions.metric() }) { Text("Metric (perf span)") }
                 Button(onClick = { actions.workflow(false) }) { Text("workflow (ok)") }
                 Button(onClick = { actions.workflow(true) }) { Text("workflow (fail)") }
                 Button(onClick = { actions.caughtError() }) { Text("caught error") }

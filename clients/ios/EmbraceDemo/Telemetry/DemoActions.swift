@@ -18,18 +18,78 @@ final class DemoActions {
     span.setAttribute(Attr.networkType, s.networkType)
   }
 
-  /// ACTION — `delay`: a traced async action with an artificial delay (B2 perf span).
-  func delay() {
-    t.addBreadcrumb("tapped: delay")
-    let span = t.startSpan("delay", actionName: "delay")
-    attachSystemSample(span)
-    span.addEvent("delay.start")
-    let ms = 800 + Int.random(in: 0..<1200)
-    span.setAttribute("delay.ms", String(ms))
-    Thread.sleep(forTimeInterval: Double(ms) / 1000.0)
-    span.addEvent("delay.end")
-    span.end()
-    t.log("delay completed in \(ms)ms")
+  /// ACTION — `metric`: a CONCURRENT + nested perf span tree (B2 perf span).
+  ///
+  ///   metric            (root)
+  ///   ├── A             (child of metric — own queue, parallel with B)
+  ///   │   ├── C         (child of A — sequential, first)
+  ///   │   └── D         (child of A — sequential, after C)
+  ///   └── B             (child of metric — parallel with A)
+  ///
+  /// A and B run on separate global-queue blocks via a DispatchGroup (real parallelism);
+  /// C then D run sequentially inside A's block. Each leaf brackets a `Thread.sleep` with
+  /// its own child span so the captured durations are real. Children pass `parent:`
+  /// EXACTLY like `workflow()` does, so the tree nests in both the Embrace and OTel arms.
+  func metric() {
+    t.addBreadcrumb("tapped: metric")
+    let metric = t.startSpan("metric", actionName: "metric")
+    attachSystemSample(metric)
+    metric.addEvent("metric.start")
+
+    let group = DispatchGroup()
+
+    // Branch A (parent=metric): runs on its own queue, in parallel with B. Inside,
+    // C then D run sequentially, each a child of A.
+    group.enter()
+    DispatchQueue.global(qos: .userInitiated).async {
+      let a = self.t.startSpan("A", parent: metric)
+      a.setAttribute(Attr.actionName, "metric")
+      a.setAttribute("task.name", "A")
+      a.addEvent("A.start")
+
+      // C — child of A, sequential (first).
+      let c = self.t.startSpan("C", parent: a)
+      let cStart = Date()
+      c.setAttribute(Attr.actionName, "metric")
+      c.setAttribute("task.name", "C")
+      Thread.sleep(forTimeInterval: 0.12)
+      c.setAttribute("work.ms", String(Int(Date().timeIntervalSince(cStart) * 1000)))
+      c.end()
+
+      // D — child of A, sequential (after C).
+      let d = self.t.startSpan("D", parent: a)
+      let dStart = Date()
+      d.setAttribute(Attr.actionName, "metric")
+      d.setAttribute("task.name", "D")
+      Thread.sleep(forTimeInterval: 0.09)
+      d.setAttribute("work.ms", String(Int(Date().timeIntervalSince(dStart) * 1000)))
+      d.end()
+
+      a.addEvent("A.end")
+      a.end()
+      group.leave()
+    }
+
+    // Branch B (parent=metric): runs in parallel with A on another queue.
+    group.enter()
+    DispatchQueue.global(qos: .userInitiated).async {
+      let b = self.t.startSpan("B", parent: metric)
+      let bStart = Date()
+      b.setAttribute(Attr.actionName, "metric")
+      b.setAttribute("task.name", "B")
+      b.addEvent("B.start")
+      Thread.sleep(forTimeInterval: 0.15)
+      b.setAttribute("work.ms", String(Int(Date().timeIntervalSince(bStart) * 1000)))
+      b.addEvent("B.end")
+      b.end()
+      group.leave()
+    }
+
+    // Join A and B, then close the root span (its duration ≈ max(A, B)).
+    group.wait()
+    metric.addEvent("metric.end")
+    metric.end()
+    t.log("metric perf tree done (A‖B, A→C→D)")
   }
 
   /// ACTION — `crash`: an UNHANDLED native error (B1). A force-unwrap of nil ->

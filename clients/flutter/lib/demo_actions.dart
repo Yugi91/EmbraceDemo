@@ -23,19 +23,87 @@ class DemoActions {
     await span.setAttribute(Attr.networkType, s.networkType);
   }
 
-  /// ACTION 1 — `delay`: a traced async action with an artificial delay (B2
-  /// performance span).
-  Future<void> delay() async {
-    await _t.addBreadcrumb('tapped: delay');
-    final span = await _t.startSpan('delay', actionName: 'delay');
-    await _attachSystemSample(span);
-    await span.addEvent('delay.start');
-    final ms = 800 + _rng.nextInt(1200);
-    await span.setAttribute('delay.ms', ms.toString());
-    await Future<void>.delayed(Duration(milliseconds: ms));
-    await span.addEvent('delay.end');
-    await span.end();
-    await _t.log('delay completed in ${ms}ms');
+  /// ACTION 1 — `metric`: build a concurrent + nested span tree (B2 performance
+  /// span), capturing real wall-clock durations.
+  ///
+  ///   metric            (ROOT)
+  ///   ├── A             (child of metric; runs CONCURRENTLY with B)
+  ///   │   ├── C         (child of A; SEQUENTIAL — first)
+  ///   │   └── D         (child of A; SEQUENTIAL — after C)
+  ///   └── B             (child of metric; CONCURRENT with A)
+  ///
+  /// A and B are awaited together (`Future.wait`) so their spans overlap; inside
+  /// A, C then D run sequentially. Children nest via `startSpan(parent:)`, the
+  /// same mechanism `workflow()` uses. `metric` ends after both A and B finish.
+  Future<void> metric() async {
+    await _t.addBreadcrumb('tapped: metric');
+    final metric = await _t.startSpan('metric', actionName: 'metric');
+    await _attachSystemSample(metric);
+    await metric.setAttribute(Attr.actionName, 'metric');
+    await metric.setAttribute('task.name', 'metric');
+    await metric.addEvent('started');
+
+    // A — child of metric; runs C then D sequentially.
+    Future<void> runA() async {
+      final sw = Stopwatch()..start();
+      final a = await _t.startSpan('A', parent: metric);
+      await a.setAttribute(Attr.actionName, 'metric');
+      await a.setAttribute('task.name', 'A');
+      await a.addEvent('A.start');
+
+      // C — child of A; SEQUENTIAL, first.
+      final cSw = Stopwatch()..start();
+      final c = await _t.startSpan('C', parent: a);
+      await c.setAttribute(Attr.actionName, 'metric');
+      await c.setAttribute('task.name', 'C');
+      await c.addEvent('C.start');
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      cSw.stop();
+      await c.setAttribute('work_ms', cSw.elapsedMilliseconds.toString());
+      await c.addEvent('C.end');
+      await c.end();
+
+      // D — child of A; SEQUENTIAL, after C.
+      final dSw = Stopwatch()..start();
+      final d = await _t.startSpan('D', parent: a);
+      await d.setAttribute(Attr.actionName, 'metric');
+      await d.setAttribute('task.name', 'D');
+      await d.addEvent('D.start');
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+      dSw.stop();
+      await d.setAttribute('work_ms', dSw.elapsedMilliseconds.toString());
+      await d.addEvent('D.end');
+      await d.end();
+
+      sw.stop();
+      await a.setAttribute('work_ms', sw.elapsedMilliseconds.toString());
+      await a.addEvent('A.end');
+      await a.end();
+    }
+
+    // B — child of metric; runs CONCURRENTLY with A.
+    Future<void> runB() async {
+      final sw = Stopwatch()..start();
+      final b = await _t.startSpan('B', parent: metric);
+      await b.setAttribute(Attr.actionName, 'metric');
+      await b.setAttribute('task.name', 'B');
+      await b.addEvent('B.start');
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      sw.stop();
+      await b.setAttribute('work_ms', sw.elapsedMilliseconds.toString());
+      await b.addEvent('B.end');
+      await b.end();
+    }
+
+    final rootSw = Stopwatch()..start();
+    // Single-isolate concurrency: A and B interleave on the event loop, so their
+    // spans overlap on the timeline (metric ~= max(A, B)).
+    await Future.wait([runA(), runB()]);
+    rootSw.stop();
+    await metric.setAttribute('work_ms', rootSw.elapsedMilliseconds.toString());
+    await metric.addEvent('completed');
+    await metric.end();
+    await _t.log('metric perf tree done (A‖B, A→C→D)');
   }
 
   /// ACTION 2 — `crash`: an UNHANDLED Dart error (B1). Thrown off a microtask

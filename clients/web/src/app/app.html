@@ -18,8 +18,8 @@
   </header>
 
   <section class="actions">
-    <button id="btn-delay" data-testid="delay" [disabled]="busy()" (click)="runDelay()">
-      delay <small>traced async perf span</small>
+    <button id="btn-metric" data-testid="metric" [disabled]="busy()" (click)="runMetric()">
+      metric <small>perf span tree (A‖B, A→C→D)</small>
     </button>
     <button id="btn-crash" data-testid="crash" class="danger" (click)="runCrash()">
       crash <small>unhandled JS error (B1)</small>

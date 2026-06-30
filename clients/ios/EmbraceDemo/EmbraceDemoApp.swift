@@ -72,7 +72,7 @@ enum Autofire {
       for name in list {
         NSLog("EMBRACE-DEMO: AUTOFIRE -> \(name)")
         switch name {
-        case "delay": actions.delay()
+        case "metric": actions.metric()
         case "workflow": actions.workflow()
         case "caught", "caught_error": actions.caughtError()
         case "anr", "hang", "app-hang": runOnMainSync { actions.appHang() }

@@ -21,7 +21,7 @@ export const OTLP_LOGS_URL = `${OTLP_BASE}/v1/logs`;
 export type TelemetryTool = 'embrace' | 'otel';
 
 /** Action names (must match the contract enum). */
-export type ActionName = 'delay' | 'crash' | 'workflow' | 'caught_error' | 'network' | 'oom';
+export type ActionName = 'metric' | 'crash' | 'workflow' | 'caught_error' | 'network' | 'oom';
 
 /** Schema attribute keys. */
 export const ATTR = {

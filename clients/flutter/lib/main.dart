@@ -93,8 +93,8 @@ class _DemoHomePageState extends State<DemoHomePage> {
     final a = widget.actions;
     for (final step in TelemetryConfig.autofire.split(',')) {
       switch (step.trim()) {
-        case 'delay':
-          await _run('delay', a.delay);
+        case 'metric':
+          await _run('metric', a.metric);
         case 'workflow':
           await _run('workflow', a.workflow);
         case 'anr':
@@ -162,9 +162,9 @@ class _DemoHomePageState extends State<DemoHomePage> {
               runSpacing: 12,
               children: [
                 _ActionButton(
-                  label: 'delay',
+                  label: 'Metric (perf span)',
                   icon: Icons.timer,
-                  onTap: _busy ? null : () => _run('delay', a.delay),
+                  onTap: _busy ? null : () => _run('metric', a.metric),
                 ),
                 _ActionButton(
                   label: 'workflow',

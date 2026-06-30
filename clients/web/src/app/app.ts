@@ -38,7 +38,7 @@ export class App implements OnInit {
     // Headless-verifier hooks: deterministic, awaitable entry points.
     const w = window as unknown as Record<string, unknown>;
     w['__demo'] = {
-      delay: () => this.runDelay(),
+      metric: () => this.runMetric(),
       caughtError: () => this.runCaughtError(),
       workflowOk: () => this.runWorkflow(false),
       workflowFail: () => this.runWorkflow(true),
@@ -60,12 +60,12 @@ export class App implements OnInit {
     });
   }
 
-  async runDelay(): Promise<void> {
+  async runMetric(): Promise<void> {
     this.busy.set(true);
-    this.log('delay: starting traced async span (750ms)...');
+    this.log('metric: building perf span tree (A‖B, A→C→D)...');
     try {
-      await this.telemetry.delay(750);
-      this.log('delay: span ended OK');
+      await this.telemetry.metric();
+      this.log('metric: span tree ended OK (root ≈ max(A, B))');
     } finally {
       this.busy.set(false);
     }

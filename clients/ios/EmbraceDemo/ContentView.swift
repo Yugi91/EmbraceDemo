@@ -14,7 +14,7 @@ struct ContentView: View {
           row("last action", lastAction)
         }
         Section(header: Text("Actions")) {
-          button("delay", "Delay (perf span · B2)", background: true) { actions.delay() }
+          button("metric", "Metric (perf span)", background: true) { actions.metric() }
           button("crash", "Crash (unhandled · B1)", background: false) { actions.crash() }
           button("app-hang", "App Hang ~6s (E3)", background: false) { actions.appHang() }
           button("frames", "Frames / Jank (E4)", background: false) { actions.frames() }

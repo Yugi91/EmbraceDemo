@@ -7,7 +7,7 @@ import {
   type ActionName,
   type TelemetryTool,
 } from './schema';
-import type { TelemetryProvider } from './telemetry.types';
+import type { DemoSpan, TelemetryProvider } from './telemetry.types';
 import { EmbraceProvider } from './embrace.provider';
 import { OtelProvider } from './otel.provider';
 
@@ -64,18 +64,101 @@ export class TelemetryService {
   }
 
   /**
-   * Action 1 — delay: a traced async action with an artificial delay (a performance span).
-   * Emits a B4 custom event ("delay.tick") partway through.
+   * Action 1 — metric: a CONCURRENT + NESTED span tree that captures REAL durations, to show
+   * overlapping vs. sequential work in the trace/waterfall view:
+   *
+   *   metric            (ROOT span)
+   *   ├── A             (child of metric; runs CONCURRENTLY with B)
+   *   │   ├── C         (child of A; SEQUENTIAL — first,  ~120ms)
+   *   │   └── D         (child of A; SEQUENTIAL — after C, ~90ms)
+   *   └── B             (child of metric; CONCURRENT with A, ~150ms)
+   *
+   * JS is single-threaded, but `Promise.all([runA(), runB()])` lets A and B interleave at their
+   * `await` points, so their spans OVERLAP in the timeline (A ≈ C+D ≈ 210ms, B ≈ 150ms, and the
+   * `metric` root ≈ max(A, B) ≈ 210ms). C → D are strictly sequential inside A.
+   *
+   * IMPORTANT (nesting): the descendants use `parent.child(...)` rather than another bare
+   * `startActiveSpan`. The active-context managers in BOTH arms (Embrace's bundled manager and
+   * the OTel `StackContextManager`) are SYNCHRONOUS/stack-based and do NOT preserve the active
+   * span across an `await`. A bare nested `startActiveSpan` for D would be created AFTER
+   * `await runC()`, by which point the active context has unwound — so D would mis-parent. The
+   * `.child()` façade parents EXPLICITLY (Embrace `parentSpan`, OTel explicit parent context),
+   * which nests reliably regardless of the async-context limitation. Each child is still created
+   * INSIDE its parent's callback, satisfying the parent/child contract.
    */
-  async delay(ms = 750): Promise<void> {
-    this.provider.breadcrumb('action:delay');
-    await this.provider.startActiveSpan('delay', this.attrs('delay', { 'delay.ms': ms }), async (span) => {
-      span.addEvent('delay.started', { 'delay.ms': ms });
-      await new Promise((r) => setTimeout(r, ms / 2));
-      span.addEvent('delay.tick', { 'delay.elapsed_ms': ms / 2 });
-      await new Promise((r) => setTimeout(r, ms / 2));
-      span.addEvent('delay.completed', { 'delay.ms': ms });
-    });
+  async metric(): Promise<void> {
+    this.provider.breadcrumb('action:metric');
+
+    // Simulated work durations (ms). A overlaps B; A ≈ C+D so the root ≈ max(A, B).
+    const C_MS = 120;
+    const D_MS = 90;
+    const B_MS = 150;
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    // C — first sequential child of A.
+    const runC = (a: DemoSpan): Promise<number> =>
+      a.child('C', this.attrs('metric', { 'task.name': 'C', 'work.ms': C_MS }), async (c) => {
+        const start = performance.now();
+        c.addEvent('C.started', { 'work.ms': C_MS });
+        await sleep(C_MS);
+        const dur = Math.round(performance.now() - start);
+        c.setAttributes({ 'work.actual_ms': dur });
+        c.addEvent('C.completed', { 'work.actual_ms': dur });
+        return dur;
+      });
+
+    // D — second sequential child of A (runs AFTER C resolves).
+    const runD = (a: DemoSpan): Promise<number> =>
+      a.child('D', this.attrs('metric', { 'task.name': 'D', 'work.ms': D_MS }), async (d) => {
+        const start = performance.now();
+        d.addEvent('D.started', { 'work.ms': D_MS });
+        await sleep(D_MS);
+        const dur = Math.round(performance.now() - start);
+        d.setAttributes({ 'work.actual_ms': dur });
+        d.addEvent('D.completed', { 'work.actual_ms': dur });
+        return dur;
+      });
+
+    // A — child of metric; runs C then D SEQUENTIALLY. Concurrent with B.
+    const runA = (parent: DemoSpan): Promise<number> =>
+      parent.child('A', this.attrs('metric', { 'task.name': 'A' }), async (a) => {
+        const start = performance.now();
+        a.addEvent('A.started');
+        const cMs = await runC(a);
+        const dMs = await runD(a);
+        const dur = Math.round(performance.now() - start);
+        a.setAttributes({ 'work.actual_ms': dur, 'work.c_ms': cMs, 'work.d_ms': dMs });
+        a.addEvent('A.completed', { 'work.actual_ms': dur });
+        return dur;
+      });
+
+    // B — child of metric; runs CONCURRENTLY with A.
+    const runB = (parent: DemoSpan): Promise<number> =>
+      parent.child('B', this.attrs('metric', { 'task.name': 'B', 'work.ms': B_MS }), async (b) => {
+        const start = performance.now();
+        b.addEvent('B.started', { 'work.ms': B_MS });
+        await sleep(B_MS);
+        const dur = Math.round(performance.now() - start);
+        b.setAttributes({ 'work.actual_ms': dur });
+        b.addEvent('B.completed', { 'work.actual_ms': dur });
+        return dur;
+      });
+
+    await this.provider.startActiveSpan(
+      'metric',
+      this.attrs('metric', { 'task.name': 'metric' }),
+      async (root) => {
+        const start = performance.now();
+        root.addEvent('metric.started');
+        // Concurrent: A (which itself sequences C → D) overlaps B.
+        const [aMs, bMs] = await Promise.all([runA(root), runB(root)]);
+        const dur = Math.round(performance.now() - start);
+        root.setAttributes({ 'work.actual_ms': dur, 'work.a_ms': aMs, 'work.b_ms': bMs });
+        root.addEvent('metric.completed', { 'work.actual_ms': dur });
+      }
+    );
+
+    this.provider.logMessage('metric perf tree done (A‖B, A→C→D)', 'info', this.attrs('metric'));
   }
 
   /**
